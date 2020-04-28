@@ -1,0 +1,96 @@
+use crate::Position;
+use crate::Positional;
+use crate::TwineContent;
+use crate::StoryTitle;
+use crate::StoryData;
+use crate::ScriptContent;
+use crate::StylesheetContent;
+
+/// Represents the types of content that can be inside a [`Passage`]
+///
+/// [`Passage`]: struct.Passage.html
+#[derive(Debug)]
+pub enum PassageContent {
+    /// A non-special passage that contains Twine content
+    Normal(TwineContent),
+
+    /// A passage that contains the title of the story
+    StoryTitle(StoryTitle),
+
+    /// A passage that contains the story data defined by the specification
+    StoryData(Option<StoryData>, Position),
+
+    /// A passage that is tagged with `script` and contains a script
+    Script(ScriptContent),
+
+    /// A passage that is tagged with `stylesheet` and contains CSS
+    Stylesheet(StylesheetContent),
+}
+
+impl Positional for PassageContent {
+    fn get_position(&self) -> &Position {
+        match self {
+            PassageContent::Normal(p) => p.get_position(),
+            PassageContent::StoryTitle(t) => t.get_position(),
+            PassageContent::StoryData(d, p) => {
+                match d {
+                    Some(d) => &d.position,
+                    None => p,
+                }
+            },
+            PassageContent::Script(p) => p.get_position(),
+            PassageContent::Stylesheet(p) => p.get_position(),
+        }
+    }
+
+    fn mut_position(&mut self) -> &mut Position {
+        match self {
+            PassageContent::Normal(p) => p.mut_position(),
+            PassageContent::StoryTitle(t) => t.mut_position(),
+            PassageContent::StoryData(_, p) => p,
+            PassageContent::Script(p) => p.mut_position(),
+            PassageContent::Stylesheet(p) => p.mut_position(),
+        }
+    }
+}
+
+impl std::convert::From<TwineContent> for PassageContent {
+    fn from(p: TwineContent) -> PassageContent {
+        PassageContent::Normal(p)
+    }
+}
+
+impl std::convert::From<StoryTitle> for PassageContent {
+    fn from(t: StoryTitle) -> PassageContent {
+        PassageContent::StoryTitle(t)
+    }
+}
+
+impl std::convert::From<Option<StoryData>> for PassageContent {
+    fn from(d: Option<StoryData>) -> PassageContent {
+        let pos = match &d {
+            Some(data) => data.position.clone(),
+            None => Position::default(),
+        };
+        PassageContent::StoryData(d, pos)
+    }
+}
+
+impl std::convert::From<StoryData> for PassageContent {
+    fn from(d: StoryData) -> PassageContent {
+        let pos = d.position.clone();
+        PassageContent::StoryData(Some(d), pos)
+    }
+}
+
+impl std::convert::From<ScriptContent> for PassageContent {
+    fn from(s: ScriptContent) -> PassageContent {
+        PassageContent::Script(s)
+    }
+}
+
+impl std::convert::From<StylesheetContent> for PassageContent {
+    fn from(s: StylesheetContent) -> PassageContent {
+        PassageContent::Stylesheet(s)
+    }
+}

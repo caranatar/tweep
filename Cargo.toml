@@ -1,0 +1,16 @@
+[package]
+name = "tweep"
+version = "0.1.0"
+authors = ["caranatar"]
+edition = "2018"
+license = "MIT"
+description = "Parser for the Twee 3 interactive fiction format"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0.48"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"

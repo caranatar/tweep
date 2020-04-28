@@ -1,0 +1,70 @@
+use crate::Position;
+use crate::Positional;
+use crate::WarningType;
+
+/// Represents a warning with a [`WarningType`], [`Position`], and optionally a
+/// reference to another [`Position`]
+///
+/// [`WarningType`]: enum.WarningType.html
+/// [`Position`]: enum.Position.html
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Warning {
+    /// The warning type
+    pub warning_type: WarningType,
+
+    /// The location of the warning
+    pub position: Position,
+
+    /// The location referenced by this warning
+    pub referent: Option<Position>,
+}
+
+impl Warning {
+    /// Creates a new `Warning` with a default `Position` and no referent
+    pub fn new(warning_type: WarningType) -> Self {
+        Warning { warning_type, position: Position::StoryLevel, referent: None }
+    }
+
+    /// Returns `true` if this `Warning` has a referent
+    pub fn has_referent(&self) -> bool {
+        self.referent.is_some()
+    }
+
+    /// Gets the referent if one exists
+    pub fn get_referent(&self) -> Option<&Position> {
+        self.referent.as_ref()
+    }
+
+    /// Sets the referent to the given `Position`
+    pub fn set_referent(&mut self, referent: Position) {
+        self.referent = Some(referent);
+    }
+
+    /// Moves the object, sets the referent to the given `Position`, and returns
+    /// the modified object
+    pub fn with_referent(mut self, referent: Position) -> Self {
+        self.set_referent(referent);
+        self
+    }
+}
+
+impl Positional for Warning {
+    fn get_position(&self) -> &Position {
+        &self.position
+    }
+
+    fn mut_position(&mut self) -> &mut Position {
+        &mut self.position
+    }
+}
+
+impl std::fmt::Display for Warning {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let cause = if self.has_referent() {
+            format!(", caused by: {}", self.get_referent().unwrap())
+        } else {
+            String::new()
+        };
+        write!(f, "{} at {}{}", self.warning_type, self.position, cause)
+    }
+}
