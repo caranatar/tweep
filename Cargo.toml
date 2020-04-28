@@ -5,6 +5,8 @@ authors = ["caranatar"]
 edition = "2018"
 license = "MIT"
 description = "Parser for the Twee 3 interactive fiction format"
+homepage = "https://github.com/caranatar/tweep"
+repository = "https://github.com/caranatar/tweep"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
