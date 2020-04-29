@@ -40,16 +40,16 @@ pub enum ErrorType {
 impl std::fmt::Display for ErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            ErrorType::EmptyName => format!("Passage header has an empty name"),
-            ErrorType::LeadingWhitespace => format!("Passage header has whitespace before sigil (::)"),
-            ErrorType::MetadataBeforeTags => format!("Passage header has metadata before tags"),
-            ErrorType::MissingSigil => format!("Passage header missing sigil (::)"),
-            ErrorType::UnescapedOpenSquare => format!("Unescaped [ character in passage header"),
-            ErrorType::UnescapedOpenCurly => format!("Unescaped {{ character in passage header"),
-            ErrorType::UnescapedCloseSquare => format!("Unescaped ] character in passage header"),
-            ErrorType::UnescapedCloseCurly => format!("Unescaped }} character in passage header"),
-            ErrorType::UnclosedTagBlock => format!("Unclosed tag block in passage header"),
-            ErrorType::UnclosedMetadataBlock => format!("Unclosed metadata block in passage header"),
+            ErrorType::EmptyName => "Passage header has an empty name".to_string(),
+            ErrorType::LeadingWhitespace => "Passage header has whitespace before sigil (::)".to_string(),
+            ErrorType::MetadataBeforeTags => "Passage header has metadata before tags".to_string(),
+            ErrorType::MissingSigil => "Passage header missing sigil (::)".to_string(),
+            ErrorType::UnescapedOpenSquare => "Unescaped [ character in passage header".to_string(),
+            ErrorType::UnescapedOpenCurly => "Unescaped { character in passage header".to_string(),
+            ErrorType::UnescapedCloseSquare => "Unescaped ] character in passage header".to_string(),
+            ErrorType::UnescapedCloseCurly => "Unescaped } character in passage header".to_string(),
+            ErrorType::UnclosedTagBlock => "Unclosed tag block in passage header".to_string(),
+            ErrorType::UnclosedMetadataBlock => "Unclosed metadata block in passage header".to_string(),
             ErrorType::BadInputPath(path, err_str) => format!("Error opening path {}: {}", path, err_str),
         })
     }

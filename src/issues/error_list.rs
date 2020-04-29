@@ -4,18 +4,13 @@ use crate::Positional;
 /// Represents a list of [`Error`]s
 ///
 /// [`Error`]: struct.Error.html
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ErrorList {
     /// The list of `Error`s
     pub errors: Vec<Error>,
 }
 
 impl ErrorList {
-    /// Creates a new empty `ErrorList`
-    pub fn new() -> Self {
-        ErrorList { errors: Vec::new() }
-    }
-
     /// Adds the given [`Error`] to the list
     pub fn push(&mut self, error: Error) {
         self.errors.push(error);
@@ -95,7 +90,7 @@ impl std::fmt::Display for ErrorList {
 
 impl std::convert::From<Error> for ErrorList {
     fn from(e: Error) -> ErrorList {
-        let mut error_list = ErrorList::new();
+        let mut error_list = ErrorList::default();
         error_list.push(e);
         error_list
     }

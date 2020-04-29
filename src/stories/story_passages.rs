@@ -44,7 +44,7 @@ impl StoryPassages {
     ///
     /// [`Warning`]: struct.Warning.html
     pub fn from_string(input: String) -> Output<Result<Self, ErrorList>> {
-        let slice:Vec<&str> = input.split("\n").collect();
+        let slice:Vec<&str> = input.split('\n').collect();
         StoryPassages::parse(&slice)
     }
 
@@ -195,7 +195,7 @@ impl StoryPassages {
             warnings.push(Warning::new(WarningType::MissingStoryData));
         }
 
-        for (_, passage) in &self.passages {
+        for passage in self.passages.values() {
             if let PassageContent::Normal(twine) = &passage.content {
                 for link in twine.get_links() {
                     if !self.passages.contains_key(&link.target) {
@@ -243,8 +243,8 @@ impl<'a> Parser<'a> for StoryPassages {
             // Find the start of the next passage using the sigil (::)
             let pos = iter.position(|&x| x.trim_start().starts_with("::"));
 
-            let pos = if pos.is_some() {
-                start + pos.unwrap() +1
+            let pos = if let Some(p) = pos {
+                start + p +1
             } else {
                 input.len()
             };
@@ -303,7 +303,7 @@ impl Positional for StoryPassages {
             self.data.as_mut().unwrap().set_file(file.clone());
         }
 
-        for (_, passage) in &mut self.passages {
+        for passage in self.passages.values_mut() {
             passage.set_file(file.clone());
         }
 

@@ -69,8 +69,7 @@ impl<'a> Parser<'a> for TwineContent {
     fn parse(input: &'a Self::Input) -> Self::Output {
         let mut linked_passages = Vec::new();
         let mut warnings = Vec::new();
-        let mut row = 0;
-        for line in input {
+        for (row, line) in input.iter().enumerate() {
             let mut start = 0;
             loop {
                 start = match line[start..].find("[[") {
@@ -85,9 +84,9 @@ impl<'a> Parser<'a> for TwineContent {
                     },
                 };
                 let link_content = &line[start+2..end];
-                let linked_passage = if link_content.contains("|") {
+                let linked_passage = if link_content.contains('|') {
                     // Link format: [[Link Text|Passage Name]]
-                    let mut iter = link_content.split("|");
+                    let mut iter = link_content.split('|');
                     let _ = iter.next();
                     iter.next().unwrap()
                 } else if link_content.contains("<-") {
@@ -115,7 +114,6 @@ impl<'a> Parser<'a> for TwineContent {
                                 
                 start = end;
             }
-            row += 1;
         }
         
         let mut content = input.join("\n");

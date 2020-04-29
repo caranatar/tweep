@@ -42,17 +42,17 @@ pub enum WarningType {
 impl std::fmt::Display for WarningType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            WarningType::EscapedOpenSquare => format!("Escaped [ character in passage header"),
-            WarningType::EscapedCloseSquare => format!("Escaped ] character in passage header"),
-            WarningType::EscapedOpenCurly => format!("Escaped {{ character in passage header"),
-            WarningType::EscapedCloseCurly => format!("Escaped }} character in passage header"),
+            WarningType::EscapedOpenSquare => "Escaped [ character in passage header".to_string(),
+            WarningType::EscapedCloseSquare => "Escaped ] character in passage header".to_string(),
+            WarningType::EscapedOpenCurly => "Escaped { character in passage header".to_string(),
+            WarningType::EscapedCloseCurly => "Escaped } character in passage header".to_string(),
             WarningType::JsonError(error_str) => format!("Error encountered while parsing JSON: {}", error_str),
-            WarningType::DuplicateStoryData => format!("Multiple StoryData passages found"),
-            WarningType::DuplicateStoryTitle => format!("Multiple StoryTitle passages found"),
-            WarningType::MissingStoryData => format!("No StoryData passage found"),
-            WarningType::MissingStoryTitle => format!("No StoryTitle passage found"),
-            WarningType::UnclosedLink => format!("Unclosed passage link"),
-            WarningType::WhitespaceInLink => format!("Whitespace in passage link"),
+            WarningType::DuplicateStoryData => "Multiple StoryData passages found".to_string(),
+            WarningType::DuplicateStoryTitle => "Multiple StoryTitle passages found".to_string(),
+            WarningType::MissingStoryData => "No StoryData passage found".to_string(),
+            WarningType::MissingStoryTitle => "No StoryTitle passage found".to_string(),
+            WarningType::UnclosedLink => "Unclosed passage link".to_string(),
+            WarningType::WhitespaceInLink => "Whitespace in passage link".to_string(),
             WarningType::DeadLink(target) => format!("Dead link to nonexistant passage: {}", target),
         })
     }

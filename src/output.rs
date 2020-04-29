@@ -61,7 +61,7 @@ impl<T> Output<T> {
 
     /// Returns `true` if the object has associated [`Warning`]s
     pub fn has_warnings(&self) -> bool {
-        self.warnings.len() > 0
+        !self.warnings.is_empty()
     }
 
     /// Returns a reference to the associated [`Vec`] of [`Warning`]s

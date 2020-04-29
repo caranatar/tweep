@@ -184,7 +184,7 @@ impl std::fmt::Display for Position {
             Position::Column(col) => format!("column {}", col),
             Position::RowColumn(row, col) => format!("row {}, column {}", row, col),
             Position::File(file, row, col) => format!("{}: row {}, column {}", file, row, col),
-            Position::StoryLevel => format!("story level"),
+            Position::StoryLevel => "story level".to_string(),
         })
     }
 }

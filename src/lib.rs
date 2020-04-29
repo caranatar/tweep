@@ -17,25 +17,25 @@ pub use output::Output;
 mod parser;
 pub use parser::Parser;
 
-mod passage;
-pub(crate) use passage::InternalTwineLink;
-pub use passage::Passage;
-pub use passage::PassageContent;
-pub use passage::PassageHeader;
-pub use passage::ScriptContent;
-pub use passage::StoryTitle;
-pub use passage::StylesheetContent;
-pub use passage::StoryData;
-pub use passage::TwineContent;
-pub use passage::TwineLink;
+mod passages;
+pub(crate) use passages::InternalTwineLink;
+pub use passages::Passage;
+pub use passages::PassageContent;
+pub use passages::PassageHeader;
+pub use passages::ScriptContent;
+pub use passages::StoryTitle;
+pub use passages::StylesheetContent;
+pub use passages::StoryData;
+pub use passages::TwineContent;
+pub use passages::TwineLink;
 
-mod position;
-pub use position::Position;
-pub use position::Positional;
+mod positions;
+pub use positions::Position;
+pub use positions::Positional;
 
-mod story;
-pub use story::Story;
-pub use story::StoryPassages;
+mod stories;
+pub use stories::Story;
+pub use stories::StoryPassages;
 
 #[cfg(test)]
 mod tests {
