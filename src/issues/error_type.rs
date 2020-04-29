@@ -28,9 +28,6 @@ pub enum ErrorType {
     /// Passage header has an unclosed tag block
     UnclosedTagBlock,
 
-    /// Passage header has an unclosed metadata block
-    UnclosedMetadataBlock,
-
     /// An error was encountered when attempting to parse from the given [`Path`](std::path::Path).
     /// Contains the path string and the error string
     BadInputPath(String, String),
@@ -49,7 +46,6 @@ impl std::fmt::Display for ErrorType {
             ErrorType::UnescapedCloseSquare => "Unescaped ] character in passage header".to_string(),
             ErrorType::UnescapedCloseCurly => "Unescaped } character in passage header".to_string(),
             ErrorType::UnclosedTagBlock => "Unclosed tag block in passage header".to_string(),
-            ErrorType::UnclosedMetadataBlock => "Unclosed metadata block in passage header".to_string(),
             ErrorType::BadInputPath(path, err_str) => format!("Error opening path {}: {}", path, err_str),
         })
     }

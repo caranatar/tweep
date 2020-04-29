@@ -14,7 +14,6 @@ use serde_json::json;
 /// # Parse Errors
 /// * [`LeadingWhitespace`] - Whitespace before the `::` sigil on a header line
 /// * [`MissingSigil`] - No `::` sigil at the beginning of the header line
-/// * [`UnclosedMetadataBlock`] - Metadata present but unclosed
 /// * [`MetadataBeforeTags`] - Metadata and tags present but in wrong order
 /// * [`UnclosedTagBlock`] - Tag block present but unclosed
 /// * [`UnescapedOpenCurly`] - Unescaped `{` character in passage name
@@ -33,7 +32,6 @@ use serde_json::json;
 /// [`Position`]: enum.Position.html
 /// [`LeadingWhitespace`]: enum.ErrorType.html#variant.LeadingWhitespace
 /// [`MissingSigil`]: enum.ErrorType.html#variant.MissingSigil
-/// [`UnclosedMetadataBlock`]: enum.ErrorType.html#variant.UnclosedMetadataBlock
 /// [`MetadataBeforeTags`]: enum.ErrorType.html#variant.MetadataBeforeTags
 /// [`UnclosedTagBlock`]: enum.ErrorType.html#variant.UnclosedTagBlock
 /// [`UnescapedOpenCurly`]: enum.ErrorType.html#variant.UnescapedOpenCurly
@@ -130,14 +128,10 @@ impl<'a> Parser<'a> for PassageHeader {
             panic!("Unreachable: Failed to extract map from JSON object");
         };
 
-        if let Some((range, unclosed)) = guess_metadata_range(input) {
+        if let Some(range) = guess_metadata_range(input) {
             let pos = range.start;
             name_end_pos = pos;
 
-            if unclosed {
-                errors.push(Error::new(ErrorType::UnclosedMetadataBlock).with_column(pos));
-            }
-            
             if find_last_unescaped(&input[range.end..], "[").is_some() {
                 errors.push(Error::new(ErrorType::MetadataBeforeTags).with_column(pos));
             }
@@ -250,23 +244,22 @@ fn find_all_unescaped(input: &str, s: &str) -> Vec<usize> {
 
 /// Given a header string, tries to guess what the best range is representing
 /// the metadata within the header, if present. Returns `None` if no metadata is
-/// found. If it's found, it returns the range along with a `bool` indicating if
-/// the metadata is closed/balanced
+/// found. If it's found, it returns the range
 ///
 /// Code-chan... ganbarre
-fn guess_metadata_range(input: &str) -> Option<(Range<usize>, bool)> {
+fn guess_metadata_range(input: &str) -> Option<Range<usize>> {
     let opens = find_all_unescaped(input, "{");
     let closes = find_all_unescaped(input, "}");
     
     if opens.is_empty() {
         None
     } else if closes.is_empty() {
-        Some((opens[opens.len()-1]..input.len(), true))
+        Some(opens[opens.len()-1]..input.len())
     } else if opens.len() > closes.len() {
         let diff = opens.len() - closes.len();
-        Some((opens[diff]..(closes[closes.len()-1] + 1), true))
+        Some(opens[diff]..(closes[closes.len()-1] + 1))
     } else {
-        Some((opens[0]..(closes[closes.len()-1] + 1), false))
+        Some(opens[0]..(closes[closes.len()-1] + 1))
     }
 }
 
@@ -380,9 +373,13 @@ mod tests {
     fn unclosed_metadata() {
         let input = ":: An overgrown path { \"foo\": \"bar\"";
         let out = PassageHeader::parse(input);
-        let (res, _) = out.take();
-        assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::UnclosedMetadataBlock).with_column(21));
+        let (res, warnings) = out.take();
+        assert_eq!(res.is_err(), false);
+        assert!(if let WarningType::JsonError(_) = warnings[0].warning_type {
+            true
+        } else {
+            false
+        })
     }
 
     #[test]
