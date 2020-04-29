@@ -46,3 +46,22 @@ impl Positional for StylesheetContent {
         &mut self.position
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic() {
+        let input = r#"foo
+bar
+baz"#.to_string();
+        let v:Vec<&str> = input.split('\n').collect();
+        let out = StylesheetContent::parse(&v);
+        assert!(!out.has_warnings());
+        let (res, _) = out.take();
+        assert!(res.is_ok());
+        let content = res.ok().unwrap();
+        assert_eq!(content.content, input);
+    }
+}

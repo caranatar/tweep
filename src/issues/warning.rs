@@ -68,3 +68,32 @@ impl std::fmt::Display for Warning {
         write!(f, "{} at {}{}", self.warning_type, self.position, cause)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn incremental() {
+        let mut warning = Warning::new(WarningType::UnclosedLink);
+        assert!(!warning.has_referent());
+        assert!(warning.get_referent().is_none());
+        assert_eq!(warning.get_position(), &Position::StoryLevel);
+
+        warning.set_referent(Position::RowColumn(5,23));
+        assert!(warning.has_referent());
+        assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5,23)));
+        assert_eq!(warning.get_position(), &Position::StoryLevel);
+    }
+
+    #[test]
+    fn unchanged_referent() {
+        let mut warning = Warning::new(WarningType::UnclosedLink)
+            .with_referent(Position::RowColumn(23,5));
+        // Prove changing the Warning's Position doesn't change the referent
+        warning.set_column(10);
+        warning.set_row(20);
+        assert_eq!(warning.get_referent(), Some(&Position::RowColumn(23,5)));
+        assert_eq!(warning.get_position(), &Position::RowColumn(20,10));
+    }
+}

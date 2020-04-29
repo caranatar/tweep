@@ -195,4 +195,63 @@ Test Story
         let title = story.title.unwrap();
         assert_eq!(title, "Test Story");
     }
+
+    #[test]
+    fn dir_input() -> Result<(), Box<dyn std::error::Error>> {
+        use std::fs::File;
+        let input_one = r#":: Start
+At the start, link to [[A passage]]
+
+:: A passage
+This passage links to [[Another passage]]
+
+:: StoryTitle
+Test Story
+
+:: Wa\{rning title one
+blah blah
+"#.to_string();
+
+        let input_two = r#":: Another passage
+Links back to [[Start]]
+
+:: StoryData
+{
+"ifid": "ABC"
+}
+
+:: Warning titl\]e two
+blah blah
+"#.to_string();
+        
+        use std::io::{Write};
+        let dir = tempdir()?;
+        let file_path_one = dir.path().join("test.twee");
+        let mut file_one = File::create(file_path_one.clone())?;
+        writeln!(file_one, "{}", input_one)?;
+        let file_path_two = dir.path().join("test2.tw");
+        let mut file_two = File::create(file_path_two.clone())?;
+        writeln!(file_two, "{}", input_two)?;
+
+        let out = Story::from_path(dir.path());
+        assert_eq!(out.has_warnings(), true);
+        let (res, warnings) = out.take();
+        assert_eq!(warnings.len(), 2);
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
+        assert_eq!(story.title, Some("Test Story".to_string()));
+
+        use crate::Positional;
+        assert!(warnings.contains(&Warning::new(WarningType::EscapedOpenCurly)
+                                  .with_column(5)
+                                  .with_row(9)
+                                  .with_file("test.twee".to_string())));
+
+        assert!(warnings.contains(&Warning::new(WarningType::EscapedCloseSquare)
+                                  .with_column(15)
+                                  .with_row(8)
+                                  .with_file("test2.tw".to_string())));
+
+        Ok(())
+    }
 }

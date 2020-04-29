@@ -513,6 +513,59 @@ blah blah
     }
 
     #[test]
+    fn dir_input_duplicates() -> Result<(), Box<dyn std::error::Error>> {
+        let input_one = r#":: Start
+At the start, link to [[A passage]]
+
+:: A passage
+This passage links to [[Another passage]]
+
+:: StoryTitle
+Test Story
+
+:: StoryData
+{
+"ifid": "DEF"
+}
+"#.to_string();
+
+        let input_two = r#":: Another passage
+Links back to [[Start]]
+
+:: StoryData
+{
+"ifid": "ABC"
+}
+
+:: StoryTitle
+A Test Story
+"#.to_string();
+        
+        use std::io::{Write};
+        let dir = tempdir()?;
+        let file_path_one = dir.path().join("test.twee");
+        let mut file_one = File::create(file_path_one.clone())?;
+        writeln!(file_one, "{}", input_one)?;
+        let file_path_two = dir.path().join("test2.tw");
+        let mut file_two = File::create(file_path_two.clone())?;
+        writeln!(file_two, "{}", input_two)?;
+
+        let out = StoryPassages::from_path(dir.path());
+        assert_eq!(out.has_warnings(), true);
+        let (res, warnings) = out.take();
+        assert_eq!(warnings.len(), 2);
+
+        // We can't know the parse order, so we can't know anything other than
+        // the type of warnings we expect
+        assert!(warnings.iter().any(|w| WarningType::DuplicateStoryData == w.warning_type));
+        assert!(warnings.iter().any(|w| WarningType::DuplicateStoryTitle == w.warning_type));
+        
+        assert_eq!(res.is_ok(), true);
+        
+        Ok(())
+    }
+
+    #[test]
     fn duplicate_story_data() {
         let input = r#":: A passage
 blah whatever
