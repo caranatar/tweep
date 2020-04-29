@@ -181,18 +181,65 @@ impl StoryPassages {
     /// * [`MissingStoryTitle`] - No `StoryTitle` passage found
     /// * [`MissingStoryData`] - No `StoryData` passage found
     /// * [`DeadLink`] - Found a link to a non-existent passage
+    /// * [`MissingStartPassage`] - No `Start` passage found and no alternate
+    ///   passage set in `StoryData`
+    /// * [`DeadStartPassage`] - Alternate start passage set in `StoryData`, but
+    ///   no such passage found in parsing
     ///
     /// [`MissingStoryTitle`]: enum.WarningType.html#variant.MissingStoryTitle
     /// [`MissingStoryData`]: enum.WarningType.html#variant.MissingStoryData
     /// [`DeadLink`]: enum.WarningType.html#variant.DeadLink
+    /// [`MissingStartPassage`]: enum.WarningType.html#variant.MissingStartPassage
+    /// [`DeadStartPassage`]: enum.WarningType.html#variant.DeadStartPassage
     pub fn check(&self) -> Vec<Warning> {
         let mut warnings = Vec::new();
         if self.title.is_none() {
             warnings.push(Warning::new(WarningType::MissingStoryTitle));
         }
 
-        if self.data.is_none() {
-            warnings.push(Warning::new(WarningType::MissingStoryData));
+        let mut missing_start = !self.passages.contains_key("Start");
+
+        self.data.as_ref()
+            .or_else(|| {
+                // There is no StoryData, generate a warning
+                warnings.push(Warning::new(WarningType::MissingStoryData));
+
+                // Return None to prevent additional processing
+                None
+            })
+            .and_then(|passage| {
+                // There was an attempt to parse a StoryData passage
+                if let PassageContent::StoryData(maybe_data, _) = &passage.content {
+                    maybe_data.as_ref()
+                        // If there is parsed StoryData, get the start field
+                        .and_then(|data| data.start.as_ref())
+                        // If there is a start field
+                        .and_then(|start| {
+                            // Even if the start field is a dead link, it's not
+                            // missing a start passage
+                            missing_start = false;
+
+                            // Check if the configured start passage exists
+                            if !self.passages.contains_key(start) {
+                                // There is an alternate start passage specified,
+                                // but it does not exist
+                                warnings.push(Warning {
+                                    warning_type: WarningType::DeadStartPassage(start.clone()),
+                                    position: passage.header.position.clone(),
+                                    referent: None
+                                });
+                            }
+
+                            // Return something
+                            Some(())
+                        })
+                } else {
+                    None
+                }
+            });
+        
+        if missing_start {
+            warnings.push(Warning::new(WarningType::MissingStartPassage));
         }
 
         for passage in self.passages.values() {
@@ -428,7 +475,7 @@ Test Story
 
     #[test]
     fn dead_link() {
-        let input = r#":: A passage
+        let input = r#":: Start
 This passage links to [[Another passage]]
 
 :: Another passage
@@ -453,5 +500,86 @@ Test Story
                                   .with_row(4)
                                   .with_column(24)
         ]);
+    }
+
+    #[test]
+    fn alt_start() {
+        let input = r#":: Alt Start
+This passage links to [[Another passage]]
+
+:: Another passage
+This links back to [[Alt Start]]
+
+:: StoryTitle
+Test Story
+
+:: StoryData
+{
+"ifid": "abc",
+"start": "Alt Start"
+}
+"#.to_string();
+        let out = StoryPassages::from_string(input);
+        let (res, mut warnings) = out.take();
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
+        let mut check_warnings = story.check();
+        warnings.append(&mut check_warnings);
+        assert!(warnings.is_empty());
+    }
+    
+    #[test]
+    fn dead_start() {
+        let input = r#":: Alt Start
+This passage links to [[Another passage]]
+
+:: Another passage
+This links back to [[Alt Start]]
+
+:: StoryTitle
+Test Story
+
+:: StoryData
+{
+"ifid": "abc",
+"start": "Alternate Start"
+}
+"#.to_string();
+        let out = StoryPassages::from_string(input);
+        let (res, mut warnings) = out.take();
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
+        let mut check_warnings = story.check();
+        warnings.append(&mut check_warnings);
+        assert_eq!(warnings, vec![Warning::new(
+            WarningType::DeadStartPassage("Alternate Start".to_string()))
+                                  .with_row(9)
+                                  .with_column(0)
+        ]);
+    }
+
+    #[test]
+    fn missing_start() {
+        let input = r#":: Alt Start
+This passage links to [[Another passage]]
+
+:: Another passage
+This links back to [[Alt Start]]
+
+:: StoryTitle
+Test Story
+
+:: StoryData
+{
+"ifid": "abc"
+}
+"#.to_string();
+        let out = StoryPassages::from_string(input);
+        let (res, mut warnings) = out.take();
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
+        let mut check_warnings = story.check();
+        warnings.append(&mut check_warnings);
+        assert_eq!(warnings, vec![Warning::new(WarningType::MissingStartPassage)]);
     }
 }

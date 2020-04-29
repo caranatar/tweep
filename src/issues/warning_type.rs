@@ -37,6 +37,12 @@ pub enum WarningType {
     /// Encountered a link to a passage name that does not match any parsed
     /// passage. Contains the passage name content of the dead link.
     DeadLink(String),
+
+    /// No passage called `Start` found and no start passage set in `StoryData`
+    MissingStartPassage,
+
+    /// Start passage set in `StoryData` that cannot be found
+    DeadStartPassage(String),
 }
 
 impl std::fmt::Display for WarningType {
@@ -54,6 +60,8 @@ impl std::fmt::Display for WarningType {
             WarningType::UnclosedLink => "Unclosed passage link".to_string(),
             WarningType::WhitespaceInLink => "Whitespace in passage link".to_string(),
             WarningType::DeadLink(target) => format!("Dead link to nonexistant passage: {}", target),
+            WarningType::MissingStartPassage => "No passage \"Start\" found and no alternate starting passage set in StoryData".to_string(),
+            WarningType::DeadStartPassage(start) => format!("Start passage set to {}, but no such passage found", start),
         })
     }
 }
