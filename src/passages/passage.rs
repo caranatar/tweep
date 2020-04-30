@@ -55,6 +55,16 @@ impl Passage {
             },
         }).with_warnings(warnings)
     }
+
+    /// Returns a reference to the metadata contained by the `header` field
+    pub fn metadata(&self) -> &serde_json::Map<String, serde_json::Value> {
+        &self.header.metadata
+    }
+
+    /// Returns a reference to the list of tags contained by the `header` field
+    pub fn tags(&self) -> &Vec<String> {
+        &self.header.tags
+    }
 }
 
 impl<'a> Parser<'a> for Passage {
@@ -169,6 +179,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
         let passage = res.ok().unwrap();
+        assert_eq!(passage.tags(), &vec![ "script".to_string() ]);
         let content = passage.content;
         let expected = if let PassageContent::Script(script) = content {
             assert_eq!(passage.header.name, "Script Passage");
@@ -188,6 +199,8 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
         let passage = res.ok().unwrap();
+        assert_eq!(passage.metadata()["position"], "10,10");
+        assert_eq!(passage.metadata()["size"], "100,100");
         let content = passage.content;
         let expected = if let PassageContent::Stylesheet(stylesheet) = content {
             assert_eq!(passage.header.name, "Style Passage");
