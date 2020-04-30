@@ -1,13 +1,105 @@
 use crate::ErrorList;
+use crate::Output;
 use crate::Passage;
 use crate::PassageContent;
-use crate::Output;
-use crate::StoryPassages;
 use crate::StoryData;
-use std::path::Path;
+use crate::StoryPassages;
 use std::collections::HashMap;
+use std::path::Path;
 
-/// Represents a parsed Twee story
+/// A parsed Twee story
+///
+/// This is the primary interface for tweep. The provided utility functions
+/// allow a Twee 3 story to be parsed from a `String`, a directory or file
+/// `Path`, or a slice of string slices, representing the lines of input. The
+/// output is an `Output<Result<Story, ErrorList>>` which is either the parsed
+/// `Story` or an [`ErrorList`] if the parse failed, along with a list of any
+/// [`Warning`]s generated during parsing. The fields in this struct provide
+/// access to all necessary components of the parsed story.
+///
+/// # Parse Errors
+/// * [`BadInputPath`] - The given `Path` cannot be used to parse a story
+/// See [`Passage`] for other errors that can occur during parsing
+///
+/// # Parse Warnings
+/// * [`DuplicateStoryTitle`] - More than one `StoryTitle` passage found
+/// * [`DuplicateStoryData`] - More than one `StoryData` passage found
+/// * [`MissingStoryTitle`] - No `StoryTitle` passage found
+/// * [`MissingStoryData`] - No `StoryData` passage found
+/// * [`DeadLink`] - Found a link to a non-existent passage
+/// * [`MissingStartPassage`] - No `Start` passage found and no alternate
+///   passage set in `StoryData`
+/// * [`DeadStartPassage`] - Alternate start passage set in `StoryData`, but
+///   no such passage found in parsing
+/// See [`Passage`] for other warnings that can occur during parsing
+///
+///
+/// # Examples
+/// ```
+/// use tweep::Story;
+/// let input = r#":: StoryTitle
+///RustDoc Sample Story
+///
+///:: StoryData
+///{
+///  "ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
+///  "format": "SugarCube",
+///  "format-version": "2.28.2",
+///  "start": "My Starting Passage",
+///  "tag-colors": {
+///    "tag1": "green",
+///    "tag2": "red",
+///    "tag3": "blue"
+///  },
+///  "zoom": 0.25
+///}
+///
+///:: My Starting Passage [ tag1 tag2 ]
+///This is the starting passage, specified by the start attribute of StoryData.
+///Alternately, we could remove that attribute and rename the passage to Start.
+///
+///It has tags and links to:
+///  [[Another passage]]
+///  [[Here too!|Another passage]]
+///  [[A third passage<-And a different passage]]
+///
+///:: Another passage {"position":"600,400","size":"100,200"}
+///This passage has some metadata attached to it
+///
+///:: A third passage [tag3] { "position": "400,600" }
+///This passage has both tags and metadata. The size attribute of the metadata
+///isn't overridden, so it will be set to the default value.
+///"#.to_string();
+///
+///// Parse the input into an Output<Result<Story, ErrorList>>
+///let out = Story::from_string(input);
+///assert!(!out.has_warnings());
+///
+///// Move the Result out of the Output
+///let (res, _) = out.take();
+///assert!(res.is_ok());
+///
+///// Get the Story object
+///let story = res.ok().unwrap();
+///
+///// StoryTitle and StoryData contents are parsed into special fields
+///assert_eq!(story.title.unwrap(), "RustDoc Sample Story");
+///assert_eq!(story.data.unwrap().ifid, "D674C58C-DEFA-4F70-B7A2-27742230C0FC");
+///
+///// Other passages are parsed into a map, keyed by the passage name
+///assert_eq!(story.passages["My Starting Passage"].tags(), &vec!["tag1", "tag2"]);
+///let metadata = story.passages["A third passage"].metadata();
+///assert_eq!(metadata["size"], "100,100");
+///assert_eq!(metadata["position"], "400,600");
+/// ```
+///
+/// [`MissingStoryTitle`]: enum.WarningType.html#variant.MissingStoryTitle
+/// [`MissingStoryData`]: enum.WarningType.html#variant.MissingStoryData
+/// [`DeadLink`]: enum.WarningType.html#variant.DeadLink
+/// [`MissingStartPassage`]: enum.WarningType.html#variant.MissingStartPassage
+/// [`DeadStartPassage`]: enum.WarningType.html#variant.DeadStartPassage
+/// [`BadInputPath`]: enumErrorType.html#variant.BadInputPath
+/// [`Passage`]: struct.Passage.html
 #[derive(Default)]
 pub struct Story {
     /// The story title
@@ -74,32 +166,42 @@ impl std::convert::From<StoryPassages> for Story {
             None => None,
         };
 
-        let scripts = s.scripts.into_iter().map(|p| {
-            match p.content {
+        let scripts = s
+            .scripts
+            .into_iter()
+            .map(|p| match p.content {
                 PassageContent::Script(script) => script.content,
                 _ => panic!("Expected script to be Script"),
-            }
-        }).collect();
+            })
+            .collect();
 
-        let stylesheets = s.stylesheets.into_iter().map(|p| {
-            match p.content {
+        let stylesheets = s
+            .stylesheets
+            .into_iter()
+            .map(|p| match p.content {
                 PassageContent::Stylesheet(stylesheet) => stylesheet.content,
                 _ => panic!("Expected stylesheet to be Stylesheet"),
-            }
-        }).collect();
+            })
+            .collect();
 
         let passages = s.passages;
 
-        Story { title, data, passages, scripts, stylesheets }
+        Story {
+            title,
+            data,
+            passages,
+            scripts,
+            stylesheets,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use crate::Warning;
     use crate::WarningType;
+    use tempfile::tempdir;
 
     #[test]
     fn warning_offsets() {
@@ -119,13 +221,19 @@ Baz
 Test Story
 
 
-"#.to_string();
+"#
+        .to_string();
         use crate::Positional;
         let out = Story::from_string(input);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
-        assert_eq!(warnings[0], Warning::new(WarningType::EscapedOpenSquare).with_row(6).with_column(4));
+        assert_eq!(
+            warnings[0],
+            Warning::new(WarningType::EscapedOpenSquare)
+                .with_row(6)
+                .with_column(4)
+        );
     }
 
     #[test]
@@ -146,7 +254,8 @@ Baz
 Test Story
 
 
-"#.to_string();
+"#
+        .to_string();
         use std::fs::File;
         use std::io::Write;
         let dir = tempdir()?;
@@ -185,7 +294,8 @@ Baz
 Test Story
 
 
-"#.to_string();
+"#
+        .to_string();
         let out = Story::from_string(input);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
@@ -210,7 +320,8 @@ Test Story
 
 :: Wa\{rning title one
 blah blah
-"#.to_string();
+"#
+        .to_string();
 
         let input_two = r#":: Another passage
 Links back to [[Start]]
@@ -222,9 +333,10 @@ Links back to [[Start]]
 
 :: Warning titl\]e two
 blah blah
-"#.to_string();
-        
-        use std::io::{Write};
+"#
+        .to_string();
+
+        use std::io::Write;
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
@@ -242,15 +354,19 @@ blah blah
         assert_eq!(story.title, Some("Test Story".to_string()));
 
         use crate::Positional;
-        assert!(warnings.contains(&Warning::new(WarningType::EscapedOpenCurly)
-                                  .with_column(5)
-                                  .with_row(9)
-                                  .with_file("test.twee".to_string())));
+        assert!(warnings.contains(
+            &Warning::new(WarningType::EscapedOpenCurly)
+                .with_column(5)
+                .with_row(9)
+                .with_file("test.twee".to_string())
+        ));
 
-        assert!(warnings.contains(&Warning::new(WarningType::EscapedCloseSquare)
-                                  .with_column(15)
-                                  .with_row(8)
-                                  .with_file("test2.tw".to_string())));
+        assert!(warnings.contains(
+            &Warning::new(WarningType::EscapedCloseSquare)
+                .with_column(15)
+                .with_row(8)
+                .with_file("test2.tw".to_string())
+        ));
 
         Ok(())
     }

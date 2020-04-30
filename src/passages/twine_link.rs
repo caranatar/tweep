@@ -1,7 +1,7 @@
 use crate::Position;
 use crate::Positional;
 
-/// Represents a link to a twee passage contained within a twee passage
+/// A link to a twee passage contained within a twee passage
 #[derive(Debug, Eq, PartialEq)]
 pub struct TwineLink {
     /// The name of the passage this link points to
@@ -13,9 +13,13 @@ pub struct TwineLink {
 
 impl TwineLink {
     /// Creates a new link with a default [`Position`]
+    ///
     /// [`Position`]: enum.Position.html
     pub fn new(target: String) -> Self {
-        TwineLink { target, position: Position::default() }
+        TwineLink {
+            target,
+            position: Position::default(),
+        }
     }
 }
 

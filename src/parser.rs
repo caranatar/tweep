@@ -4,7 +4,7 @@ pub trait Parser<'a> {
     /// The type produced by this parser
     type Output;
 
-    /// The type accepted by this parser 
+    /// The type accepted by this parser
     type Input: ?Sized;
 
     /// Performs the parsing operation and returns the result

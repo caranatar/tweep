@@ -1,15 +1,14 @@
+use crate::issues::*;
 use crate::Output;
 use crate::Parser;
 use crate::Position;
 use crate::Positional;
-use crate::issues::*;
 
 use std::ops::Range;
 
 use serde_json::json;
 
-/// Represents a passage header, along with the associated [`Position`], tags,
-/// and metadata
+/// A passage header, along with associated [`Position`], tags, and metadata
 ///
 /// # Parse Errors
 /// * [`LeadingWhitespace`] - Whitespace before the `::` sigil on a header line
@@ -28,6 +27,17 @@ use serde_json::json;
 /// * [`EscapedCloseCurly`] - `\}` present in passage name
 /// * [`EscapedOpenSquare`] - `\[` present in passage name
 /// * [`EscapedCloseSquare`] - `\]` present in passage name
+///
+/// # Examples
+/// ```
+/// use tweep::{Parser, PassageHeader};
+/// let input = r#":: A passage [ tag1 tag2 ] { "position": "5,5" }"#;
+/// let header = PassageHeader::parse(input);
+/// # assert!(!header.has_warnings());
+/// # let (header, _) = header.take();
+/// # let header = header.ok().unwrap();
+/// # assert_eq!(header.name, "A passage");
+/// ```
 ///
 /// [`Position`]: enum.Position.html
 /// [`LeadingWhitespace`]: enum.ErrorType.html#variant.LeadingWhitespace
@@ -80,7 +90,7 @@ fn parse_metadata(meta_str: &str) -> Result<serde_json::Map<String, serde_json::
     let res = serde_json::from_str(meta_str);
     if res.is_ok() {
         use serde_json::Value;
-        let tmp_meta:Value = res.ok().unwrap();
+        let tmp_meta: Value = res.ok().unwrap();
         if let Value::Object(map) = tmp_meta {
             Ok(map)
         } else {
@@ -99,22 +109,25 @@ fn parse_metadata(meta_str: &str) -> Result<serde_json::Map<String, serde_json::
 impl<'a> Parser<'a> for PassageHeader {
     type Output = Output<Result<Self, ErrorList>>;
     type Input = str;
-    
+
     fn parse(input: &'a Self::Input) -> Self::Output {
         let mut warnings = Vec::new();
         let mut errors = ErrorList::default();
-        
+
         // Check for sigil
         if !input.starts_with("::") {
             // If the sigil is not present, check for leading whitespace
             let trimmed = input.trim_start();
 
             // Generate appropriate error
-            errors.push(Error::new(if trimmed.starts_with("::") {
-                ErrorType::LeadingWhitespace
-            } else {
-                ErrorType::MissingSigil
-            }).with_column(0));
+            errors.push(
+                Error::new(if trimmed.starts_with("::") {
+                    ErrorType::LeadingWhitespace
+                } else {
+                    ErrorType::MissingSigil
+                })
+                .with_column(0),
+            );
         }
 
         // Check for metadata
@@ -139,7 +152,7 @@ impl<'a> Parser<'a> for PassageHeader {
             let meta_str = &input[range];
             let res = parse_metadata(meta_str);
             if res.is_ok() {
-                for (k,v) in res.ok().unwrap().iter() {
+                for (k, v) in res.ok().unwrap().iter() {
                     metadata.insert(k.to_string(), v.clone());
                 }
             } else {
@@ -148,16 +161,17 @@ impl<'a> Parser<'a> for PassageHeader {
         }
 
         // Check for tags
-        let mut tags:Vec<String> = Vec::new();
+        let mut tags: Vec<String> = Vec::new();
         if let Some(pos) = find_last_unescaped(&input[..name_end_pos], "[") {
-            let end_pos = find_last_unescaped(&input[pos+1..name_end_pos], "]");
+            let end_pos = find_last_unescaped(&input[pos + 1..name_end_pos], "]");
             name_end_pos = std::cmp::min(name_end_pos, pos);
 
             if let Some(p) = end_pos {
-                tags = input[pos+1..pos+1+p]
+                tags = input[pos + 1..pos + 1 + p]
                     .trim()
                     .split_whitespace()
-                    .map(|s| s.to_string()).collect();
+                    .map(|s| s.to_string())
+                    .collect();
             } else {
                 errors.push(Error::new(ErrorType::UnclosedTagBlock).with_column(pos));
             }
@@ -165,11 +179,27 @@ impl<'a> Parser<'a> for PassageHeader {
 
         // Check for unescaped special characters in the name portion. This also
         // produces a list of warning locations for escaped chars in the name
-        for (c,e,w) in vec![
-            ("{", ErrorType::UnescapedOpenCurly, WarningType::EscapedOpenCurly),
-            ("}", ErrorType::UnescapedCloseCurly, WarningType::EscapedCloseCurly),
-            ("[", ErrorType::UnescapedOpenSquare, WarningType::EscapedOpenSquare),
-            ("]", ErrorType::UnescapedCloseSquare, WarningType::EscapedCloseSquare)
+        for (c, e, w) in vec![
+            (
+                "{",
+                ErrorType::UnescapedOpenCurly,
+                WarningType::EscapedOpenCurly,
+            ),
+            (
+                "}",
+                ErrorType::UnescapedCloseCurly,
+                WarningType::EscapedCloseCurly,
+            ),
+            (
+                "[",
+                ErrorType::UnescapedOpenSquare,
+                WarningType::EscapedOpenSquare,
+            ),
+            (
+                "]",
+                ErrorType::UnescapedCloseSquare,
+                WarningType::EscapedCloseSquare,
+            ),
         ] {
             // If there are unescaped special chars, return the error now. Pass
             // in 0 as the starting index because that way we don't have to
@@ -179,7 +209,7 @@ impl<'a> Parser<'a> for PassageHeader {
                 errors.push(indices.err().unwrap());
             } else {
                 let indices = indices.ok().unwrap();
-                
+
                 // For any warning locations returned, add them to the warning list
                 for idx in indices {
                     warnings.push(Warning::new(w.clone()).with_column(idx));
@@ -193,7 +223,13 @@ impl<'a> Parser<'a> for PassageHeader {
         }
 
         if errors.is_empty() {
-            Output::new(Ok(PassageHeader { name, tags, metadata, position: Position::default() })).with_warnings(warnings)
+            Output::new(Ok(PassageHeader {
+                name,
+                tags,
+                metadata,
+                position: Position::default(),
+            }))
+            .with_warnings(warnings)
         } else {
             Output::new(Err(errors))
         }
@@ -231,14 +267,13 @@ fn find_last_unescaped(input: &str, s: &str) -> Option<usize> {
 /// Finds all unescaped occurrences of the string `s` in input string `input`
 fn find_all_unescaped(input: &str, s: &str) -> Vec<usize> {
     let esc_s = format!("\\{}", s);
-    let escaped:Vec<usize> = input.match_indices(&esc_s)
-        .map(|(i, _)| i+1)
-        .collect();
-    let unescaped:Vec<usize> = input.match_indices(s)
+    let escaped: Vec<usize> = input.match_indices(&esc_s).map(|(i, _)| i + 1).collect();
+    let unescaped: Vec<usize> = input
+        .match_indices(s)
         .filter(|(i, _)| !escaped.contains(i))
         .map(|(i, _)| i)
         .collect();
-    
+
     unescaped
 }
 
@@ -250,16 +285,16 @@ fn find_all_unescaped(input: &str, s: &str) -> Vec<usize> {
 fn guess_metadata_range(input: &str) -> Option<Range<usize>> {
     let opens = find_all_unescaped(input, "{");
     let closes = find_all_unescaped(input, "}");
-    
+
     if opens.is_empty() {
         None
     } else if closes.is_empty() {
-        Some(opens[opens.len()-1]..input.len())
+        Some(opens[opens.len() - 1]..input.len())
     } else if opens.len() > closes.len() {
         let diff = opens.len() - closes.len();
-        Some(opens[diff]..(closes[closes.len()-1] + 1))
+        Some(opens[diff]..(closes[closes.len() - 1] + 1))
     } else {
-        Some(opens[0]..(closes[closes.len()-1] + 1))
+        Some(opens[0]..(closes[closes.len() - 1] + 1))
     }
 }
 
@@ -268,17 +303,14 @@ fn guess_metadata_range(input: &str) -> Option<Range<usize>> {
 /// the name contains any instances of that character but escaped, return a list
 /// of locations in the name where the escaped character is found so that
 /// warnings can be generated
-fn check_name(input: &str,
-              unescaped_str: &str,
-              error: ErrorType) -> Result<Vec<usize>, Error> {
+fn check_name(input: &str, unescaped_str: &str, error: ErrorType) -> Result<Vec<usize>, Error> {
     let escaped_str = format!("\\{}", unescaped_str);
-    
-    let escaped:Vec<usize> = input.match_indices(&escaped_str)
-        .map(|(i,_)| i)
-        .collect();
-    let unescaped:Vec<usize> = input.match_indices(unescaped_str)
-        .map(|(i,_)| i)
-        .filter(|i| *i == 0 || !escaped.contains(&(i-1)))
+
+    let escaped: Vec<usize> = input.match_indices(&escaped_str).map(|(i, _)| i).collect();
+    let unescaped: Vec<usize> = input
+        .match_indices(unescaped_str)
+        .map(|(i, _)| i)
+        .filter(|i| *i == 0 || !escaped.contains(&(i - 1)))
         .collect();
 
     if unescaped.is_empty() {
@@ -291,14 +323,17 @@ fn check_name(input: &str,
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn missing_sigil() {
         let input = "An overgrown path";
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::MissingSigil).with_column(0));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::MissingSigil).with_column(0)
+        );
     }
 
     #[test]
@@ -307,7 +342,10 @@ mod tests {
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::LeadingWhitespace).with_column(0));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::LeadingWhitespace).with_column(0)
+        );
     }
 
     #[test]
@@ -316,13 +354,19 @@ mod tests {
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::EmptyName).with_column(2));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::EmptyName).with_column(2)
+        );
 
         let input = ":: \t";
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::EmptyName).with_column(2));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::EmptyName).with_column(2)
+        );
     }
 
     #[test]
@@ -331,32 +375,55 @@ mod tests {
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::MetadataBeforeTags).with_column(21));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::MetadataBeforeTags).with_column(21)
+        );
     }
 
     #[test]
     fn unescaped_chars() {
-        for (c,e) in vec![("{", ErrorType::UnescapedOpenCurly),
-                          ("}", ErrorType::UnescapedCloseCurly),
-                          ("[", ErrorType::UnescapedOpenSquare),
-                          ("]", ErrorType::UnescapedCloseSquare)] {
+        for (c, e) in vec![
+            ("{", ErrorType::UnescapedOpenCurly),
+            ("}", ErrorType::UnescapedCloseCurly),
+            ("[", ErrorType::UnescapedOpenSquare),
+            ("]", ErrorType::UnescapedCloseSquare),
+        ] {
             let input = format!(":: {}An overgrown path [tag] {{ \"size\": \"5,5\" }}", c);
             let out = PassageHeader::parse(&input);
             let (res, _) = out.take();
             assert_eq!(res.is_err(), true);
-            assert!(res.err().unwrap().errors.contains(&Error::new(e.clone()).with_column(3)));
+            assert!(res
+                .err()
+                .unwrap()
+                .errors
+                .contains(&Error::new(e.clone()).with_column(3)));
 
-            let input = format!(":: {}\\{}An overgrown path [tag] {{ \"size\": \"5,5\" }}", c, c);
+            let input = format!(
+                ":: {}\\{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
+                c, c
+            );
             let out = PassageHeader::parse(&input);
             let (res, _) = out.take();
             assert_eq!(res.is_err(), true);
-            assert!(res.err().unwrap().errors.contains(&Error::new(e.clone()).with_column(3)));
+            assert!(res
+                .err()
+                .unwrap()
+                .errors
+                .contains(&Error::new(e.clone()).with_column(3)));
 
-            let input = format!(":: \\{}{}An overgrown path [tag] {{ \"size\": \"5,5\" }}", c, c);
+            let input = format!(
+                ":: \\{}{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
+                c, c
+            );
             let out = PassageHeader::parse(&input);
             let (res, _) = out.take();
             assert_eq!(res.is_err(), true);
-            assert!(res.err().unwrap().errors.contains(&Error::new(e).with_column(5)));
+            assert!(res
+                .err()
+                .unwrap()
+                .errors
+                .contains(&Error::new(e).with_column(5)));
         }
     }
 
@@ -366,7 +433,10 @@ mod tests {
         let out = PassageHeader::parse(input);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
-        assert_eq!(res.err().unwrap().errors[0], Error::new(ErrorType::UnclosedTagBlock).with_column(21));
+        assert_eq!(
+            res.err().unwrap().errors[0],
+            Error::new(ErrorType::UnclosedTagBlock).with_column(21)
+        );
     }
 
     #[test]
@@ -375,11 +445,13 @@ mod tests {
         let out = PassageHeader::parse(input);
         let (res, warnings) = out.take();
         assert_eq!(res.is_err(), false);
-        assert!(if let WarningType::JsonError(_) = warnings[0].warning_type {
-            true
-        } else {
-            false
-        })
+        assert!(
+            if let WarningType::JsonError(_) = warnings[0].warning_type {
+                true
+            } else {
+                false
+            }
+        )
     }
 
     #[test]
@@ -391,7 +463,7 @@ mod tests {
         assert_eq!(res.is_ok(), true);
         let ph = res.ok().unwrap();
         assert_eq!(ph.tags.len(), 4);
-        assert_eq!(ph.tags, vec!["tag1","tag2","tag3","tag4"]);
+        assert_eq!(ph.tags, vec!["tag1", "tag2", "tag3", "tag4"]);
         assert_eq!(ph.has_tag("tag1"), true);
         assert_eq!(ph.has_tag("tag5"), false);
 

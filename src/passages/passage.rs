@@ -1,16 +1,16 @@
 use crate::ErrorList;
-use crate::TwineContent;
-use crate::PassageHeader;
-use crate::Parser;
-use crate::Positional;
 use crate::Output;
+use crate::Parser;
+use crate::PassageContent;
+use crate::PassageHeader;
+use crate::Positional;
 use crate::ScriptContent;
 use crate::StoryData;
 use crate::StoryTitle;
 use crate::StylesheetContent;
-use crate::PassageContent;
+use crate::TwineContent;
 
-/// Represents a complete Twee passage, including header and content
+/// A complete Twee passage, including header and content
 ///
 /// # Parse Errors
 /// See [`PassageHeader`] and possible [`PassageContent`] variants
@@ -30,9 +30,24 @@ pub struct Passage {
 
 impl Passage {
     /// Creates a new `Output<Result<Passage, ErrorList>>` from the parse output
-    /// of a `PassageHeader` and a `PassageContent`
-    pub fn new(header: Output<Result<PassageHeader, ErrorList>>,
-               content: Output<Result<PassageContent, ErrorList>>) -> Output<Result<Self, ErrorList>>{
+    /// of a `PassageHeader` and a `PassageContent`, along with a composed list
+    /// of `Warning`s from both
+    ///
+    /// If either `header` or `content` contain errors, the result of this will
+    /// be a list of errors.
+    ///
+    /// # Examples
+    /// ```
+    /// use tweep::{Parser, Passage, PassageHeader, PassageContent, StoryTitle};
+    /// let header = PassageHeader::parse(":: StoryTitle");
+    /// let content = StoryTitle::parse(&vec!["A title"]);
+    /// let passage = Passage::new(header, content.into_result());
+    /// assert!(passage.is_ok());
+    /// ```
+    pub fn new(
+        header: Output<Result<PassageHeader, ErrorList>>,
+        content: Output<Result<PassageContent, ErrorList>>,
+    ) -> Output<Result<Self, ErrorList>> {
         // Move out the header and its associated warnings
         let (mut header_res, mut warnings) = header.take();
 
@@ -52,8 +67,9 @@ impl Passage {
                 let header = header_res.ok().unwrap();
                 let content = content_res.ok().unwrap();
                 Ok(Passage { header, content })
-            },
-        }).with_warnings(warnings)
+            }
+        })
+        .with_warnings(warnings)
     }
 
     /// Returns a reference to the metadata contained by the `header` field
@@ -91,7 +107,7 @@ impl<'a> Parser<'a> for Passage {
         iter.rfind(|&&x| !x.is_empty());
 
         // Get the complete content input
-        let content_input:&[&str] = &input[1..=iter.len()];
+        let content_input: &[&str] = &input[1..=iter.len()];
 
         // Parse the content based on the type indicated by the header
         let content: Output<Result<PassageContent, ErrorList>>;
@@ -179,7 +195,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
         let passage = res.ok().unwrap();
-        assert_eq!(passage.tags(), &vec![ "script".to_string() ]);
+        assert_eq!(passage.tags(), &vec!["script".to_string()]);
         let content = passage.content;
         let expected = if let PassageContent::Script(script) = content {
             assert_eq!(passage.header.name, "Script Passage");
@@ -190,7 +206,7 @@ mod tests {
         };
         assert_eq!(expected, true);
     }
-    
+
     #[test]
     fn stylesheet_passage() {
         let input = vec![":: Style Passage [stylesheet]", "foo", "bar"];
@@ -221,7 +237,7 @@ That
 
 
 "#;
-        let input:Vec<&str> = input_string.split("\n").collect();
+        let input: Vec<&str> = input_string.split("\n").collect();
         let out = Passage::parse(&input);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();

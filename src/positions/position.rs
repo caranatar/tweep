@@ -1,6 +1,7 @@
-/// Represents a position within the content of a Twee story. By default, a
-/// `Position` is a global `StoryLevel`. Additional context can be added from
-/// there to create a position at File, row, and column level.
+/// A position within the content of a Twee story.
+///
+/// By default, a `Position` is a global `StoryLevel`. Additional context can be
+/// added from there to create a position at File, row, and column level.
 ///
 /// # Notes
 /// When setting an individual field of a `Position`, if the current enum
@@ -88,7 +89,7 @@ impl Position {
     /// accomodate a file name, the enum will be promoted to a value that does.
     /// In such a case, the row and column will be set to a default of 0 if they
     /// are not already set
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use tweep::Position;
@@ -180,12 +181,16 @@ impl Position {
 
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Position::Column(col) => format!("column {}", col),
-            Position::RowColumn(row, col) => format!("row {}, column {}", row, col),
-            Position::File(file, row, col) => format!("{}: row {}, column {}", file, row, col),
-            Position::StoryLevel => "story level".to_string(),
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Position::Column(col) => format!("column {}", col),
+                Position::RowColumn(row, col) => format!("row {}, column {}", row, col),
+                Position::File(file, row, col) => format!("{}: row {}, column {}", file, row, col),
+                Position::StoryLevel => "story level".to_string(),
+            }
+        )
     }
 }
 

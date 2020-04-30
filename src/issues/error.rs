@@ -2,24 +2,39 @@ use crate::ErrorType;
 use crate::Position;
 use crate::Positional;
 
-/// Represents an error with an [`ErrorType`] and [`Position`]
+/// An error with an owned [`ErrorType`] and [`Position`]
 ///
 /// [`ErrorType`]: enum.ErrorType.html
 /// [`Position`]: enum.Position.html
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Error {
-    error_type: ErrorType,
-    position: Position,
+    /// The type of error
+    pub error_type: ErrorType,
+
+    /// The location of the error
+    pub position: Position,
 }
 
 impl Error {
     /// Creates a new `Error` with the given [`ErrorType`] and a default
     /// [`Position`]
     ///
+    /// # Examples
+    /// ```
+    /// use tweep::{Error, ErrorType};
+    /// # use tweep::{Position, Positional};
+    /// let error = Error::new(ErrorType::EmptyName);
+    /// # assert_eq!(error.error_type, ErrorType::EmptyName);
+    /// # assert_eq!(error.get_position(), &Position::default());
+    /// ```
+    ///
     /// [`ErrorType`]: enum.ErrorType.html
     /// [`Position`]: enum.Position.html
     pub fn new(error_type: ErrorType) -> Self {
-        Error { error_type, position: Position::StoryLevel }
+        Error {
+            error_type,
+            position: Position::StoryLevel,
+        }
     }
 }
 

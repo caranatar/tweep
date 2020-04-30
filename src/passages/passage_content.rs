@@ -1,12 +1,12 @@
 use crate::Position;
 use crate::Positional;
-use crate::TwineContent;
-use crate::StoryTitle;
-use crate::StoryData;
 use crate::ScriptContent;
+use crate::StoryData;
+use crate::StoryTitle;
 use crate::StylesheetContent;
+use crate::TwineContent;
 
-/// Represents the types of content that can be inside a [`Passage`]
+/// An enum of the types of content that can be inside a [`Passage`]
 ///
 /// [`Passage`]: struct.Passage.html
 #[derive(Debug)]
@@ -32,11 +32,9 @@ impl Positional for PassageContent {
         match self {
             PassageContent::Normal(p) => p.get_position(),
             PassageContent::StoryTitle(t) => t.get_position(),
-            PassageContent::StoryData(d, p) => {
-                match d {
-                    Some(d) => &d.position,
-                    None => p,
-                }
+            PassageContent::StoryData(d, p) => match d {
+                Some(d) => &d.position,
+                None => p,
             },
             PassageContent::Script(p) => p.get_position(),
             PassageContent::Stylesheet(p) => p.get_position(),

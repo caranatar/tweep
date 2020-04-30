@@ -4,8 +4,7 @@ use crate::Parser;
 use crate::Position;
 use crate::Positional;
 
-/// Represents the content of a [`Passage`] tagged with `script`, containing
-/// script data.
+/// The content of a [`Passage`] tagged with `script`, containing script data.
 ///
 /// No validation is done when parsing this content.
 ///
@@ -55,8 +54,9 @@ mod tests {
     fn basic() {
         let input = r#"foo
 bar
-baz"#.to_string();
-        let v:Vec<&str> = input.split('\n').collect();
+baz"#
+            .to_string();
+        let v: Vec<&str> = input.split('\n').collect();
         let out = ScriptContent::parse(&v);
         assert!(!out.has_warnings());
         let (res, _) = out.take();

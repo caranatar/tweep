@@ -1,4 +1,4 @@
-/// Represents the types of warnings that can be produced by `tweep`
+/// An enum of the types of warnings that can be produced by `tweep`
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WarningType {
     /// `\[` in a passage title
@@ -47,21 +47,35 @@ pub enum WarningType {
 
 impl std::fmt::Display for WarningType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            WarningType::EscapedOpenSquare => "Escaped [ character in passage header".to_string(),
-            WarningType::EscapedCloseSquare => "Escaped ] character in passage header".to_string(),
-            WarningType::EscapedOpenCurly => "Escaped { character in passage header".to_string(),
-            WarningType::EscapedCloseCurly => "Escaped } character in passage header".to_string(),
-            WarningType::JsonError(error_str) => format!("Error encountered while parsing JSON: {}", error_str),
-            WarningType::DuplicateStoryData => "Multiple StoryData passages found".to_string(),
-            WarningType::DuplicateStoryTitle => "Multiple StoryTitle passages found".to_string(),
-            WarningType::MissingStoryData => "No StoryData passage found".to_string(),
-            WarningType::MissingStoryTitle => "No StoryTitle passage found".to_string(),
-            WarningType::UnclosedLink => "Unclosed passage link".to_string(),
-            WarningType::WhitespaceInLink => "Whitespace in passage link".to_string(),
-            WarningType::DeadLink(target) => format!("Dead link to nonexistant passage: {}", target),
-            WarningType::MissingStartPassage => "No passage \"Start\" found and no alternate starting passage set in StoryData".to_string(),
-            WarningType::DeadStartPassage(start) => format!("Start passage set to {}, but no such passage found", start),
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                WarningType::EscapedOpenSquare =>
+                    "Escaped [ character in passage header".to_string(),
+                WarningType::EscapedCloseSquare =>
+                    "Escaped ] character in passage header".to_string(),
+                WarningType::EscapedOpenCurly =>
+                    "Escaped { character in passage header".to_string(),
+                WarningType::EscapedCloseCurly =>
+                    "Escaped } character in passage header".to_string(),
+                WarningType::JsonError(error_str) =>
+                    format!("Error encountered while parsing JSON: {}", error_str),
+                WarningType::DuplicateStoryData => "Multiple StoryData passages found".to_string(),
+                WarningType::DuplicateStoryTitle =>
+                    "Multiple StoryTitle passages found".to_string(),
+                WarningType::MissingStoryData => "No StoryData passage found".to_string(),
+                WarningType::MissingStoryTitle => "No StoryTitle passage found".to_string(),
+                WarningType::UnclosedLink => "Unclosed passage link".to_string(),
+                WarningType::WhitespaceInLink => "Whitespace in passage link".to_string(),
+                WarningType::DeadLink(target) =>
+                    format!("Dead link to nonexistant passage: {}", target),
+                WarningType::MissingStartPassage =>
+                    "No passage \"Start\" found and no alternate starting passage set in StoryData"
+                        .to_string(),
+                WarningType::DeadStartPassage(start) =>
+                    format!("Start passage set to {}, but no such passage found", start),
+            }
+        )
     }
 }

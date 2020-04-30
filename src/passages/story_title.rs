@@ -4,14 +4,22 @@ use crate::Parser;
 use crate::Position;
 use crate::Positional;
 
-/// Represents a passage with the `StoryTitle` name, which will be used as the
-/// title for the story
+/// The content of a special passage with the `StoryTitle` name, which will be
+/// used as the title for a parsed story
 ///
 /// # Parse Errors
 /// None
 ///
 /// # Parse Warnings
 /// None
+///
+/// # Examples
+/// ```
+/// use tweep::{Parser, StoryTitle};
+/// let input:Vec<&str> = "Example Story".split('\n').collect();
+/// let out = StoryTitle::parse(&input);
+/// assert_eq!(out.get_output().as_ref().ok().unwrap().title, "Example Story");
+/// ```
 #[derive(Debug)]
 pub struct StoryTitle {
     /// The title content
@@ -51,8 +59,9 @@ mod tests {
     fn basic() {
         let input = r#"foo
 bar
-baz"#.to_string();
-        let v:Vec<&str> = input.split('\n').collect();
+baz"#
+            .to_string();
+        let v: Vec<&str> = input.split('\n').collect();
         let out = StoryTitle::parse(&v);
         assert!(!out.has_warnings());
         let (res, _) = out.take();

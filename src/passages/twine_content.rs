@@ -1,15 +1,14 @@
 use crate::ErrorList;
 use crate::InternalTwineLink;
-use crate::Parser;
 use crate::Output;
+use crate::Parser;
 use crate::Position;
 use crate::Positional;
 use crate::TwineLink;
 use crate::Warning;
 use crate::WarningType;
 
-
-/// Represents the content of a Twine passage.
+/// The contents of a Twine passage.
 ///
 /// Contains the content of the passage along with the [`Position`]. The
 /// `get_links` method can be used to retrieve all Twine links that were parsed
@@ -29,6 +28,19 @@ use crate::WarningType;
 /// [[Display Text|Passage Name]]
 /// [[Display Text->Passage Name]]
 /// [[Passage Name<-Display Text]]
+/// ```
+///
+/// # Examples
+/// ```
+/// use tweep::{Parser, Position, TwineContent, TwineLink};
+/// let input:Vec<&str> = r#"This is a Twine content passage. It has a [[link]]
+///And some [[other link->Another passage]]
+///"#.split('\n').collect();
+/// let out = TwineContent::parse(&input);
+/// # assert!(!out.has_warnings());
+/// assert_eq!(out.get_output().as_ref().ok().unwrap().get_links(), vec![
+///    TwineLink { target: "link".to_string(), position: Position::RowColumn(0, 44) },
+///    TwineLink { target: "Another passage".to_string(), position: Position::RowColumn(1, 11) }]);
 /// ```
 ///
 /// [`Position`]: enum.Position.html
@@ -53,10 +65,14 @@ impl TwineContent {
     pub fn get_links(&self) -> Vec<TwineLink> {
         let mut links = Vec::new();
         for link in &self.linked_passages {
-            links.push(TwineLink {
-                target: link.target.clone(),
-                position: self.position.clone(),
-            }.with_offset_column(link.col_offset).with_offset_row(link.row_offset));
+            links.push(
+                TwineLink {
+                    target: link.target.clone(),
+                    position: self.position.clone(),
+                }
+                .with_offset_column(link.col_offset)
+                .with_offset_row(link.row_offset),
+            );
         }
         links
     }
@@ -79,11 +95,15 @@ impl<'a> Parser<'a> for TwineContent {
                 let end = match line[start..].find("]]") {
                     Some(x) => start + x,
                     None => {
-                        warnings.push(Warning::new(WarningType::UnclosedLink).with_column(start).with_row(row));
+                        warnings.push(
+                            Warning::new(WarningType::UnclosedLink)
+                                .with_column(start)
+                                .with_row(row),
+                        );
                         break;
-                    },
+                    }
                 };
-                let link_content = &line[start+2..end];
+                let link_content = &line[start + 2..end];
                 let linked_passage = if link_content.contains('|') {
                     // Link format: [[Link Text|Passage Name]]
                     let mut iter = link_content.split('|');
@@ -102,8 +122,14 @@ impl<'a> Parser<'a> for TwineContent {
                     link_content
                 };
 
-                if linked_passage.starts_with(char::is_whitespace) || linked_passage.ends_with(char::is_whitespace) {
-                    warnings.push(Warning::new(WarningType::WhitespaceInLink).with_column(start+2).with_row(row));
+                if linked_passage.starts_with(char::is_whitespace)
+                    || linked_passage.ends_with(char::is_whitespace)
+                {
+                    warnings.push(
+                        Warning::new(WarningType::WhitespaceInLink)
+                            .with_column(start + 2)
+                            .with_row(row),
+                    );
                 }
 
                 linked_passages.push(InternalTwineLink {
@@ -111,14 +137,19 @@ impl<'a> Parser<'a> for TwineContent {
                     col_offset: (start + 2),
                     row_offset: row,
                 });
-                                
+
                 start = end;
             }
         }
-        
+
         let mut content = input.join("\n");
         content.push('\n');
-        Output::new(Ok(TwineContent { content, position: Position::default(), linked_passages })).with_warnings(warnings)
+        Output::new(Ok(TwineContent {
+            content,
+            position: Position::default(),
+            linked_passages,
+        }))
+        .with_warnings(warnings)
     }
 }
 
@@ -150,27 +181,39 @@ mod tests {
 
     #[test]
     fn links() {
-        let input:Vec<&str> = "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n".split("\n").collect();
+        let input: Vec<&str> =
+            "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n"
+                .split("\n")
+                .collect();
         let out = TwineContent::parse(&input);
         let (res, warnings) = out.take();
         assert_eq!(warnings.is_empty(), true);
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
         let expected_targets = vec!["foo", "bar", "baz", "qux"];
-        let expected_links:Vec<TwineLink> = (0 as usize..4).map(|row| {
-            TwineLink::new(expected_targets[row].to_string())
-                .with_column(2)
-                .with_row(row)
-        }).collect();
+        let expected_links: Vec<TwineLink> = (0 as usize..4)
+            .map(|row| {
+                TwineLink::new(expected_targets[row].to_string())
+                    .with_column(2)
+                    .with_row(row)
+            })
+            .collect();
         assert_eq!(content.get_links(), expected_links);
     }
 
     #[test]
     fn unclosed_link() {
-        let input:Vec<&str> = "blah [[unclosed\nlink]] blah blah\n\n".split("\n").collect();
+        let input: Vec<&str> = "blah [[unclosed\nlink]] blah blah\n\n"
+            .split("\n")
+            .collect();
         let out = TwineContent::parse(&input);
         let (res, warnings) = out.take();
-        assert_eq!(warnings, vec![Warning::new(WarningType::UnclosedLink).with_row(0).with_column(5)]);
+        assert_eq!(
+            warnings,
+            vec![Warning::new(WarningType::UnclosedLink)
+                .with_row(0)
+                .with_column(5)]
+        );
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
         assert_eq!(content.linked_passages.is_empty(), true);
@@ -178,30 +221,38 @@ mod tests {
 
     #[test]
     fn whitespace_in_link() {
-        let input = vec!["[[ foo]]",
-                         "[[bar ]]",
-                         "[[text|baz ]]",
-                         "[[text| qux]]",
-                         "[[quux <-text]]",
-                         "[[ quuz<-text]]",
-                         "[[text-> corge]]",
-                         "[[text->grault ]]"];
+        let input = vec![
+            "[[ foo]]",
+            "[[bar ]]",
+            "[[text|baz ]]",
+            "[[text| qux]]",
+            "[[quux <-text]]",
+            "[[ quuz<-text]]",
+            "[[text-> corge]]",
+            "[[text->grault ]]",
+        ];
         let out = TwineContent::parse(&input);
         let (res, warnings) = out.take();
-        let expected_warnings:Vec<Warning> = (0 as usize..8).map(|row| {
-            Warning::new(WarningType::WhitespaceInLink)
-                .with_row(row)
-                .with_column(2)
-        }).collect();
+        let expected_warnings: Vec<Warning> = (0 as usize..8)
+            .map(|row| {
+                Warning::new(WarningType::WhitespaceInLink)
+                    .with_row(row)
+                    .with_column(2)
+            })
+            .collect();
         assert_eq!(warnings, expected_warnings);
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
-        let expected_targets = vec![" foo", "bar ", "baz ", " qux", "quux ", " quuz", " corge", "grault "];
-        let expected_links:Vec<TwineLink> = (0 as usize..8).map(|row| {
-            TwineLink::new(expected_targets[row].to_string())
-                .with_column(2)
-                .with_row(row)
-        }).collect();
+        let expected_targets = vec![
+            " foo", "bar ", "baz ", " qux", "quux ", " quuz", " corge", "grault ",
+        ];
+        let expected_links: Vec<TwineLink> = (0 as usize..8)
+            .map(|row| {
+                TwineLink::new(expected_targets[row].to_string())
+                    .with_column(2)
+                    .with_row(row)
+            })
+            .collect();
         assert_eq!(content.get_links(), expected_links);
     }
 }

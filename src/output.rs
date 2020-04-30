@@ -55,16 +55,41 @@ impl<T> Output<T> {
     }
 
     /// Returns a reference to the output field
+    ///
+    /// # Examples
+    /// ```
+    /// use tweep::Output;
+    /// let out = Output::new("hail eris");
+    /// assert_eq!(*out.get_output(), "hail eris");
+    /// ```
     pub fn get_output(&self) -> &T {
         &self.output
     }
 
     /// Returns `true` if the object has associated [`Warning`]s
+    ///
+    /// # Examples
+    /// ```
+    /// use tweep::{Output, Warning, WarningType};
+    /// let out:Output<u8> = Output::new(5);
+    /// assert!(!out.has_warnings());
+    /// let out:Output<u8> = Output::new(5)
+    ///     .with_warnings(vec![ Warning::new(WarningType::UnclosedLink) ]);
+    /// assert!(out.has_warnings());
+    /// ```
     pub fn has_warnings(&self) -> bool {
         !self.warnings.is_empty()
     }
 
     /// Returns a reference to the associated [`Vec`] of [`Warning`]s
+    ///
+    /// # Examples
+    /// ```
+    /// use tweep::{Output, Warning, WarningType};
+    /// let out:Output<u8> = Output::new(5)
+    ///     .with_warnings(vec![ Warning::new(WarningType::UnclosedLink) ]);
+    /// assert_eq!(out.get_warnings(), &vec![ Warning::new(WarningType::UnclosedLink) ]);
+    /// ```
     pub fn get_warnings(&self) -> &Vec<Warning> {
         &self.warnings
     }

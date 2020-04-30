@@ -1,20 +1,19 @@
 use crate::Error;
 use crate::ErrorList;
+use crate::Output;
+use crate::Parser;
 use crate::Passage;
 use crate::PassageContent;
 use crate::Positional;
-use crate::Parser;
-use crate::Output;
 use crate::Warning;
 use crate::WarningType;
-use std::path::Path;
+use std::collections::HashMap;
+use std::default::Default;
 use std::fs::File;
 use std::io::Read;
-use std::default::Default;
-use std::collections::HashMap;
+use std::path::Path;
 
-/// Represents a full Twee story, but stores the full [`Passage`] object of each
-/// field.
+/// A parsed Twee story, that stores the full [`Passage`] object of each field
 ///
 /// For more information, see the [`Story`] struct.
 ///
@@ -44,7 +43,7 @@ impl StoryPassages {
     ///
     /// [`Warning`]: struct.Warning.html
     pub fn from_string(input: String) -> Output<Result<Self, ErrorList>> {
-        let slice:Vec<&str> = input.split('\n').collect();
+        let slice: Vec<&str> = input.split('\n').collect();
         StoryPassages::parse(&slice)
     }
 
@@ -81,28 +80,45 @@ impl StoryPassages {
     /// directory, finds the twee files, recurses with each file, then assembles
     /// the outputs into a single output
     fn from_path_internal<P: AsRef<Path>>(input: P) -> Output<Result<Self, ErrorList>> {
-        let path:&Path = input.as_ref();
-        let path_string:String = path.to_string_lossy().to_owned().to_string();
+        let path: &Path = input.as_ref();
+        let path_string: String = path.to_string_lossy().to_owned().to_string();
         if path.is_file() {
-            let file_name:String = path.file_name().unwrap().to_string_lossy().to_owned().to_string();
+            let file_name: String = path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_owned()
+                .to_string();
             let file = File::open(path);
             if file.is_err() {
                 let err_string = format!("{}", file.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(path_string, err_string)).into()));
+                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
+                    path_string,
+                    err_string,
+                ))
+                .into()));
             }
             let mut file = file.ok().unwrap();
             let mut contents = String::new();
             let res = file.read_to_string(&mut contents);
             if res.is_err() {
                 let err_string = format!("{}", res.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(path_string, err_string)).into()));
+                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
+                    path_string,
+                    err_string,
+                ))
+                .into()));
             }
             StoryPassages::from_string(contents).with_file(file_name)
         } else if path.is_dir() {
             let dir = std::fs::read_dir(path);
             if dir.is_err() {
                 let err_string = format!("{}", dir.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(path_string, err_string)).into()));
+                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
+                    path_string,
+                    err_string,
+                ))
+                .into()));
             }
             let dir = dir.ok().unwrap();
             let mut story = StoryPassages::default();
@@ -133,7 +149,11 @@ impl StoryPassages {
             Output::new(Ok(story)).with_warnings(warnings)
         } else {
             let err_string = "Path is not a file or directory".to_string();
-            Output::new(Err(Error::new(crate::ErrorType::BadInputPath(path_string, err_string)).into()))
+            Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
+                path_string,
+                err_string,
+            ))
+            .into()))
         }
     }
 
@@ -145,7 +165,7 @@ impl StoryPassages {
     /// The duplicate is ignored and the existing one is kept.
     pub fn merge_from(&mut self, mut other: Self) -> Vec<Warning> {
         let mut warnings = Vec::new();
-        
+
         match (&self.title, &other.title) {
             (None, Some(_)) => self.title = other.title,
             (Some(_), Some(_)) => {
@@ -153,7 +173,7 @@ impl StoryPassages {
                 *warning.mut_position() = other.title.unwrap().header.get_position().clone();
                 warning.set_referent(self.title.as_ref().unwrap().header.get_position().clone());
                 warnings.push(warning)
-            },
+            }
             _ => (),
         }
 
@@ -164,14 +184,14 @@ impl StoryPassages {
                 *warning.mut_position() = other.data.unwrap().header.get_position().clone();
                 warning.set_referent(self.data.as_ref().unwrap().header.get_position().clone());
                 warnings.push(warning);
-            },
+            }
             _ => (),
         }
 
         self.passages.extend(other.passages);
         self.scripts.append(&mut other.scripts);
         self.stylesheets.append(&mut other.stylesheets);
-        
+
         warnings
     }
 
@@ -199,7 +219,8 @@ impl StoryPassages {
 
         let mut missing_start = !self.passages.contains_key("Start");
 
-        self.data.as_ref()
+        self.data
+            .as_ref()
             .or_else(|| {
                 // There is no StoryData, generate a warning
                 warnings.push(Warning::new(WarningType::MissingStoryData));
@@ -210,7 +231,8 @@ impl StoryPassages {
             .and_then(|passage| {
                 // There was an attempt to parse a StoryData passage
                 if let PassageContent::StoryData(maybe_data, _) = &passage.content {
-                    maybe_data.as_ref()
+                    maybe_data
+                        .as_ref()
                         // If there is parsed StoryData, get the start field
                         .and_then(|data| data.start.as_ref())
                         // If there is a start field
@@ -226,7 +248,7 @@ impl StoryPassages {
                                 warnings.push(Warning {
                                     warning_type: WarningType::DeadStartPassage(start.clone()),
                                     position: passage.header.position.clone(),
-                                    referent: None
+                                    referent: None,
                                 });
                             }
 
@@ -237,7 +259,7 @@ impl StoryPassages {
                     None
                 }
             });
-        
+
         if missing_start {
             warnings.push(Warning::new(WarningType::MissingStartPassage));
         }
@@ -274,8 +296,8 @@ impl<'a> Parser<'a> for StoryPassages {
         let mut start = 0;
 
         // Story variables
-        let mut title:Option<Passage> = None;
-        let mut data:Option<Passage> = None;
+        let mut title: Option<Passage> = None;
+        let mut data: Option<Passage> = None;
         let mut passages = HashMap::new();
         let mut scripts = Vec::new();
         let mut stylesheets = Vec::new();
@@ -291,14 +313,15 @@ impl<'a> Parser<'a> for StoryPassages {
             let pos = iter.position(|&x| x.trim_start().starts_with("::"));
 
             let pos = if let Some(p) = pos {
-                start + p +1
+                start + p + 1
             } else {
                 input.len()
             };
             let passage_input = &input[start..pos];
 
             // Parse the passage
-            let (mut res, mut passage_warnings) = Passage::parse(passage_input).with_offset_row(start).take();
+            let (mut res, mut passage_warnings) =
+                Passage::parse(passage_input).with_offset_row(start).take();
             warnings.append(&mut passage_warnings);
             start = pos;
 
@@ -309,12 +332,12 @@ impl<'a> Parser<'a> for StoryPassages {
             }
 
             let passage = res.ok().unwrap();
-            
+
             // Handle passage types appropriately
             match &passage.content {
                 PassageContent::Normal(_) => {
                     passages.insert(passage.header.name.clone(), passage);
-                },
+                }
                 PassageContent::StoryTitle(_) => {
                     if let Some(existing) = &title {
                         let warning = Warning {
@@ -326,7 +349,7 @@ impl<'a> Parser<'a> for StoryPassages {
                     } else {
                         title = Some(passage);
                     }
-                },
+                }
                 PassageContent::StoryData(_, _) => {
                     if let Some(existing) = &data {
                         let warning = Warning {
@@ -338,13 +361,19 @@ impl<'a> Parser<'a> for StoryPassages {
                     } else {
                         data = Some(passage);
                     }
-                },
+                }
                 PassageContent::Script(_) => scripts.push(passage),
                 PassageContent::Stylesheet(_) => stylesheets.push(passage),
             }
         }
 
-        let story = StoryPassages { title, data, passages, scripts, stylesheets };
+        let story = StoryPassages {
+            title,
+            data,
+            passages,
+            scripts,
+            stylesheets,
+        };
         Output::new(Ok(story)).with_warnings(warnings)
     }
 }
@@ -376,9 +405,9 @@ impl Positional for StoryPassages {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use crate::Warning;
     use crate::WarningType;
+    use tempfile::tempdir;
 
     #[test]
     fn warning_offsets() {
@@ -398,12 +427,18 @@ Baz
 Test Story
 
 
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
-        assert_eq!(warnings[0], Warning::new(WarningType::EscapedOpenSquare).with_row(6).with_column(4));
+        assert_eq!(
+            warnings[0],
+            Warning::new(WarningType::EscapedOpenSquare)
+                .with_row(6)
+                .with_column(4)
+        );
     }
 
     #[test]
@@ -424,8 +459,9 @@ Baz
 Test Story
 
 
-"#.to_string();
-        use std::io::{Write};
+"#
+        .to_string();
+        use std::io::Write;
         let dir = tempdir()?;
         let file_path = dir.path().join("test.twee");
         let mut file = File::create(file_path.clone())?;
@@ -440,7 +476,13 @@ Test Story
         let title_content = story.title.unwrap().content;
         if let PassageContent::StoryTitle(title) = title_content {
             assert_eq!(title.title, "Test Story");
-            assert_eq!(warnings[0], Warning::new(WarningType::EscapedOpenSquare).with_row(6).with_column(4).with_file("test.twee".to_string()));
+            assert_eq!(
+                warnings[0],
+                Warning::new(WarningType::EscapedOpenSquare)
+                    .with_row(6)
+                    .with_column(4)
+                    .with_file("test.twee".to_string())
+            );
             assert_eq!(warnings[1], Warning::new(WarningType::MissingStoryData));
         } else {
             panic!("Expected StoryTitle");
@@ -462,7 +504,8 @@ Test Story
 
 :: Wa\{rning title one
 blah blah
-"#.to_string();
+"#
+        .to_string();
 
         let input_two = r#":: Another passage
 Links back to [[Start]]
@@ -474,9 +517,10 @@ Links back to [[Start]]
 
 :: Warning titl\]e two
 blah blah
-"#.to_string();
-        
-        use std::io::{Write};
+"#
+        .to_string();
+
+        use std::io::Write;
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
@@ -499,15 +543,19 @@ blah blah
             panic!("Expected StoryTitle");
         }
 
-        assert!(warnings.contains(&Warning::new(WarningType::EscapedOpenCurly)
-                                  .with_column(5)
-                                  .with_row(9)
-                                  .with_file("test.twee".to_string())));
+        assert!(warnings.contains(
+            &Warning::new(WarningType::EscapedOpenCurly)
+                .with_column(5)
+                .with_row(9)
+                .with_file("test.twee".to_string())
+        ));
 
-        assert!(warnings.contains(&Warning::new(WarningType::EscapedCloseSquare)
-                                  .with_column(15)
-                                  .with_row(8)
-                                  .with_file("test2.tw".to_string())));
+        assert!(warnings.contains(
+            &Warning::new(WarningType::EscapedCloseSquare)
+                .with_column(15)
+                .with_row(8)
+                .with_file("test2.tw".to_string())
+        ));
 
         Ok(())
     }
@@ -527,7 +575,8 @@ Test Story
 {
 "ifid": "DEF"
 }
-"#.to_string();
+"#
+        .to_string();
 
         let input_two = r#":: Another passage
 Links back to [[Start]]
@@ -539,9 +588,10 @@ Links back to [[Start]]
 
 :: StoryTitle
 A Test Story
-"#.to_string();
-        
-        use std::io::{Write};
+"#
+        .to_string();
+
+        use std::io::Write;
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
@@ -557,11 +607,15 @@ A Test Story
 
         // We can't know the parse order, so we can't know anything other than
         // the type of warnings we expect
-        assert!(warnings.iter().any(|w| WarningType::DuplicateStoryData == w.warning_type));
-        assert!(warnings.iter().any(|w| WarningType::DuplicateStoryTitle == w.warning_type));
-        
+        assert!(warnings
+            .iter()
+            .any(|w| WarningType::DuplicateStoryData == w.warning_type));
+        assert!(warnings
+            .iter()
+            .any(|w| WarningType::DuplicateStoryTitle == w.warning_type));
+
         assert_eq!(res.is_ok(), true);
-        
+
         Ok(())
     }
 
@@ -585,24 +639,34 @@ Link to [[A passage]]
 {
 "ifid": "DEF"
 }
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(warnings.len(), 1);
-        assert_eq!(warnings[0], Warning::new(WarningType::DuplicateStoryData)
-                   .with_column(0)
-                   .with_row(14)
-                   .with_referent(crate::Position::RowColumn(3, 0)));
+        assert_eq!(
+            warnings[0],
+            Warning::new(WarningType::DuplicateStoryData)
+                .with_column(0)
+                .with_row(14)
+                .with_referent(crate::Position::RowColumn(3, 0))
+        );
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
-        assert_eq!(story.data.and_then(|passage| {
-            if let PassageContent::StoryData(data, _) = passage.content {
-                data
-            } else {
-                None
-            }
-        }).and_then(|data| Some(data.ifid)), Some("ABC".to_string()));
+        assert_eq!(
+            story
+                .data
+                .and_then(|passage| {
+                    if let PassageContent::StoryData(data, _) = passage.content {
+                        data
+                    } else {
+                        None
+                    }
+                })
+                .and_then(|data| Some(data.ifid)),
+            Some("ABC".to_string())
+        );
     }
 
     #[test]
@@ -623,15 +687,19 @@ Link to [[A passage]]
 
 :: StoryTitle
 Discarded Duplicate Title
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(warnings.len(), 1);
-        assert_eq!(warnings[0], Warning::new(WarningType::DuplicateStoryTitle)
-                   .with_column(0)
-                   .with_row(14)
-                   .with_referent(crate::Position::RowColumn(3, 0)));
+        assert_eq!(
+            warnings[0],
+            Warning::new(WarningType::DuplicateStoryTitle)
+                .with_column(0)
+                .with_row(14)
+                .with_referent(crate::Position::RowColumn(3, 0))
+        );
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         assert_eq!(story.title.is_some(), true);
@@ -661,7 +729,8 @@ Baz
 Test Story
 
 
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
@@ -691,18 +760,20 @@ Test Story
 {
 "ifid": "abc"
 }
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
-        assert_eq!(warnings, vec![Warning::new(
-            WarningType::DeadLink("Dead link".to_string()))
-                                  .with_row(4)
-                                  .with_column(24)
-        ]);
+        assert_eq!(
+            warnings,
+            vec![Warning::new(WarningType::DeadLink("Dead link".to_string()))
+                .with_row(4)
+                .with_column(24)]
+        );
     }
 
     #[test]
@@ -721,7 +792,8 @@ Test Story
 "ifid": "abc",
 "start": "Alt Start"
 }
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -730,7 +802,7 @@ Test Story
         warnings.append(&mut check_warnings);
         assert!(warnings.is_empty());
     }
-    
+
     #[test]
     fn dead_start() {
         let input = r#":: Alt Start
@@ -747,18 +819,22 @@ Test Story
 "ifid": "abc",
 "start": "Alternate Start"
 }
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
-        assert_eq!(warnings, vec![Warning::new(
-            WarningType::DeadStartPassage("Alternate Start".to_string()))
-                                  .with_row(9)
-                                  .with_column(0)
-        ]);
+        assert_eq!(
+            warnings,
+            vec![
+                Warning::new(WarningType::DeadStartPassage("Alternate Start".to_string()))
+                    .with_row(9)
+                    .with_column(0)
+            ]
+        );
     }
 
     #[test]
@@ -767,7 +843,8 @@ Test Story
 blah blah
 
 ::StoryData
-{"ifid": "ABC"}"#.to_string();
+{"ifid": "ABC"}"#
+            .to_string();
         let out = StoryPassages::from_string(input);
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -776,7 +853,7 @@ blah blah
         warnings.append(&mut check_warnings);
         assert_eq!(warnings, vec![Warning::new(WarningType::MissingStoryTitle)]);
     }
-    
+
     #[test]
     fn missing_start() {
         let input = r#":: Alt Start
@@ -792,13 +869,17 @@ Test Story
 {
 "ifid": "abc"
 }
-"#.to_string();
+"#
+        .to_string();
         let out = StoryPassages::from_string(input);
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
-        assert_eq!(warnings, vec![Warning::new(WarningType::MissingStartPassage)]);
+        assert_eq!(
+            warnings,
+            vec![Warning::new(WarningType::MissingStartPassage)]
+        );
     }
 }
