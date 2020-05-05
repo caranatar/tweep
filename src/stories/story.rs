@@ -148,6 +148,14 @@ impl Story {
     pub fn from_path<P: AsRef<Path>>(input: P) -> Output<Result<Self, ErrorList>> {
         StoryPassages::from_path(input).into_result()
     }
+
+    /// Parses a `Story` from the given [`Path`]s. See `from_path` for
+    /// additional information on how directories are handled.
+    ///
+    /// [`Path`]: std::path::Path
+    pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> Output<Result<Self, ErrorList>> {
+        StoryPassages::from_paths(input).into_result()
+    }
 }
 
 impl std::convert::From<StoryPassages> for Story {
