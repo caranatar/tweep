@@ -233,8 +233,8 @@ Test Story
         assert_eq!(
             warnings[0],
             Warning::new(WarningType::EscapedOpenSquare)
-                .with_row(6)
-                .with_column(4)
+                .with_row(7)
+                .with_column(5)
         );
     }
 
@@ -358,15 +358,15 @@ blah blah
         use crate::Positional;
         assert!(warnings.contains(
             &Warning::new(WarningType::EscapedOpenCurly)
-                .with_column(5)
-                .with_row(9)
+                .with_column(6)
+                .with_row(10)
                 .with_file("test.twee".to_string())
         ));
 
         assert!(warnings.contains(
             &Warning::new(WarningType::EscapedCloseSquare)
-                .with_column(15)
-                .with_row(8)
+                .with_column(16)
+                .with_row(9)
                 .with_file("test2.tw".to_string())
         ));
 

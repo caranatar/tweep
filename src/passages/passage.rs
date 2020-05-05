@@ -90,7 +90,7 @@ impl<'a> Parser<'a> for Passage {
     fn parse(input: &'a Self::Input) -> Self::Output {
         // Parse the first line as the header
         let mut header = PassageHeader::parse(&input[0]);
-        header.set_row(0);
+        header.set_row(1);
 
         // Since we can't know how to parse the passage contents if we don't know
         // the passage type from the header, we can't continue

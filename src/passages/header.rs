@@ -126,7 +126,7 @@ impl<'a> Parser<'a> for PassageHeader {
                 } else {
                     ErrorType::MissingSigil
                 })
-                .with_column(0),
+                .with_column(1),
             );
         }
 
@@ -146,7 +146,7 @@ impl<'a> Parser<'a> for PassageHeader {
             name_end_pos = pos;
 
             if find_last_unescaped(&input[range.end..], "[").is_some() {
-                errors.push(Error::new(ErrorType::MetadataBeforeTags).with_column(pos));
+                errors.push(Error::new(ErrorType::MetadataBeforeTags).with_column(pos+1));
             }
 
             let meta_str = &input[range];
@@ -173,7 +173,7 @@ impl<'a> Parser<'a> for PassageHeader {
                     .map(|s| s.to_string())
                     .collect();
             } else {
-                errors.push(Error::new(ErrorType::UnclosedTagBlock).with_column(pos));
+                errors.push(Error::new(ErrorType::UnclosedTagBlock).with_column(pos + 1));
             }
         }
 
@@ -212,14 +212,14 @@ impl<'a> Parser<'a> for PassageHeader {
 
                 // For any warning locations returned, add them to the warning list
                 for idx in indices {
-                    warnings.push(Warning::new(w.clone()).with_column(idx));
+                    warnings.push(Warning::new(w.clone()).with_column(idx+1));
                 }
             }
         }
 
         let name = input[2..name_end_pos].trim().replace("\\", "");
         if name.is_empty() {
-            errors.push(Error::new(ErrorType::EmptyName).with_column(2));
+            errors.push(Error::new(ErrorType::EmptyName).with_column(3));
         }
 
         if errors.is_empty() {
@@ -316,7 +316,7 @@ fn check_name(input: &str, unescaped_str: &str, error: ErrorType) -> Result<Vec<
     if unescaped.is_empty() {
         Ok(escaped)
     } else {
-        Err(Error::new(error).with_column(unescaped[0]))
+        Err(Error::new(error).with_column(unescaped[0] + 1))
     }
 }
 
@@ -332,7 +332,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::MissingSigil).with_column(0)
+            Error::new(ErrorType::MissingSigil).with_column(1)
         );
     }
 
@@ -344,7 +344,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::LeadingWhitespace).with_column(0)
+            Error::new(ErrorType::LeadingWhitespace).with_column(1)
         );
     }
 
@@ -356,7 +356,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::EmptyName).with_column(2)
+            Error::new(ErrorType::EmptyName).with_column(3)
         );
 
         let input = ":: \t";
@@ -365,7 +365,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::EmptyName).with_column(2)
+            Error::new(ErrorType::EmptyName).with_column(3)
         );
     }
 
@@ -377,7 +377,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::MetadataBeforeTags).with_column(21)
+            Error::new(ErrorType::MetadataBeforeTags).with_column(22)
         );
     }
 
@@ -397,7 +397,7 @@ mod tests {
                 .err()
                 .unwrap()
                 .errors
-                .contains(&Error::new(e.clone()).with_column(3)));
+                .contains(&Error::new(e.clone()).with_column(4)));
 
             let input = format!(
                 ":: {}\\{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
@@ -410,7 +410,7 @@ mod tests {
                 .err()
                 .unwrap()
                 .errors
-                .contains(&Error::new(e.clone()).with_column(3)));
+                .contains(&Error::new(e.clone()).with_column(4)));
 
             let input = format!(
                 ":: \\{}{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
@@ -423,7 +423,7 @@ mod tests {
                 .err()
                 .unwrap()
                 .errors
-                .contains(&Error::new(e).with_column(5)));
+                .contains(&Error::new(e).with_column(6)));
         }
     }
 
@@ -435,7 +435,7 @@ mod tests {
         assert_eq!(res.is_err(), true);
         assert_eq!(
             res.err().unwrap().errors[0],
-            Error::new(ErrorType::UnclosedTagBlock).with_column(21)
+            Error::new(ErrorType::UnclosedTagBlock).with_column(22)
         );
     }
 

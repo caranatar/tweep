@@ -12,7 +12,7 @@
 /// a `Column` variant with the given column value. However, if `set_file` is
 /// called on a `Column` variant, it will be promoted to a `File` variant, which
 /// will contain the newly set filename, the existing column value, and a
-/// default row value of 0.
+/// default row value of 1.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Position {
     /// A column location, contains the column number
@@ -87,7 +87,7 @@ impl Position {
 
     /// Sets the file name of this `Position`. If the current value does not
     /// accomodate a file name, the enum will be promoted to a value that does.
-    /// In such a case, the row and column will be set to a default of 0 if they
+    /// In such a case, the row and column will be set to a default of 1 if they
     /// are not already set
     ///
     /// # Examples
@@ -97,11 +97,11 @@ impl Position {
     /// assert_eq!(pos, Position::StoryLevel);
     /// let file_name = "file.ext";
     /// pos.set_file(file_name.to_string());
-    /// assert_eq!(pos, Position::File(file_name.to_string(), 0, 0));
+    /// assert_eq!(pos, Position::File(file_name.to_string(), 1, 1));
     /// ```
     pub fn set_file(&mut self, file: String) {
-        let row = self.get_row().unwrap_or(0);
-        let col = self.get_column().unwrap_or(0);
+        let row = self.get_row().unwrap_or(1);
+        let col = self.get_column().unwrap_or(1);
         *self = Position::File(file, row, col);
     }
 
@@ -113,13 +113,13 @@ impl Position {
     /// use tweep::Position;
     /// let mut pos = Position::default();
     /// assert_eq!(pos.get_column(), None);
-    /// pos.offset_column(5);
+    /// pos.offset_column(4);
     /// assert_eq!(pos.get_column(), Some(5));
     /// pos.offset_column(5);
     /// assert_eq!(pos.get_column(), Some(10));
     /// ```
     pub fn offset_column(&mut self, offset: usize) {
-        let col = self.get_column().unwrap_or(0);
+        let col = self.get_column().unwrap_or(1);
         self.set_column(col + offset);
     }
 
@@ -150,10 +150,10 @@ impl Position {
     /// let mut pos = Position::default();
     /// assert_eq!(pos, Position::StoryLevel);
     /// pos.set_row(23);
-    /// assert_eq!(pos, Position::RowColumn(23, 0));
+    /// assert_eq!(pos, Position::RowColumn(23, 1));
     /// ```
     pub fn set_row(&mut self, row: usize) {
-        let col = self.get_column().unwrap_or(0);
+        let col = self.get_column().unwrap_or(1);
         *self = match self {
             Position::File(file, _, _) => Position::File(file.clone(), row, col),
             _ => Position::RowColumn(row, col),
@@ -168,13 +168,13 @@ impl Position {
     /// use tweep::Position;
     /// let mut pos = Position::default();
     /// assert_eq!(pos.get_row(), None);
-    /// pos.offset_row(5);
+    /// pos.offset_row(4);
     /// assert_eq!(pos.get_row(), Some(5));
     /// pos.offset_row(5);
     /// assert_eq!(pos.get_row(), Some(10));
     /// ```
     pub fn offset_row(&mut self, offset: usize) {
-        let row = self.get_row().unwrap_or(0);
+        let row = self.get_row().unwrap_or(1);
         self.set_row(offset + row);
     }
 }
@@ -244,9 +244,9 @@ mod tests {
 
         let file_name = "file.ext".to_string();
         pos.set_file(file_name.clone());
-        assert_eq!(pos, Position::File(file_name.clone(), 0, 0));
-        assert_eq!(pos.get_column(), Some(0));
-        assert_eq!(pos.get_row(), Some(0));
+        assert_eq!(pos, Position::File(file_name.clone(), 1, 1));
+        assert_eq!(pos.get_column(), Some(1));
+        assert_eq!(pos.get_row(), Some(1));
         assert_eq!(pos.get_file(), Some(&file_name[..]));
     }
 
@@ -255,8 +255,8 @@ mod tests {
         let mut pos = tests::get_default();
 
         pos.set_row(5);
-        assert_eq!(pos, Position::RowColumn(5, 0));
-        assert_eq!(pos.get_column(), Some(0));
+        assert_eq!(pos, Position::RowColumn(5, 1));
+        assert_eq!(pos.get_column(), Some(1));
         assert_eq!(pos.get_row(), Some(5));
         assert_eq!(pos.get_file(), None);
     }
@@ -265,7 +265,7 @@ mod tests {
     fn offset_column() {
         let mut pos = tests::get_default();
 
-        pos.offset_column(23);
+        pos.offset_column(22);
         assert_eq!(pos, Position::Column(23));
         assert_eq!(pos.get_column(), Some(23));
         assert_eq!(pos.get_row(), None);
@@ -307,22 +307,22 @@ mod tests {
     fn offset_row() {
         let mut pos = tests::get_default();
 
-        pos.offset_row(5);
-        assert_eq!(pos, Position::RowColumn(5, 0));
-        assert_eq!(pos.get_column(), Some(0));
+        pos.offset_row(4);
+        assert_eq!(pos, Position::RowColumn(5, 1));
+        assert_eq!(pos.get_column(), Some(1));
         assert_eq!(pos.get_row(), Some(5));
         assert_eq!(pos.get_file(), None);
 
         let file_name = "file.ext".to_string();
         pos.set_file(file_name.clone());
-        assert_eq!(pos, Position::File(file_name.clone(), 5, 0));
-        assert_eq!(pos.get_column(), Some(0));
+        assert_eq!(pos, Position::File(file_name.clone(), 5, 1));
+        assert_eq!(pos.get_column(), Some(1));
         assert_eq!(pos.get_row(), Some(5));
         assert_eq!(pos.get_file(), Some(&file_name[..]));
 
         pos.offset_row(5);
-        assert_eq!(pos, Position::File(file_name.clone(), 10, 0));
-        assert_eq!(pos.get_column(), Some(0));
+        assert_eq!(pos, Position::File(file_name.clone(), 10, 1));
+        assert_eq!(pos.get_column(), Some(1));
         assert_eq!(pos.get_row(), Some(10));
         assert_eq!(pos.get_file(), Some(&file_name[..]));
     }
