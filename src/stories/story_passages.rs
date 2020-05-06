@@ -307,6 +307,24 @@ impl StoryPassages {
 
         warnings
     }
+
+    /// If a start passage is configured in the StoryData, return the name of
+    /// that passage. If no start passage is configured, check for the presence
+    /// of a passage called "Start". If that passage exists, return that name,
+    /// otherwise return None
+    pub fn get_start_passage_name(&self) -> Option<&str> {
+        self.data.as_ref()
+            .and_then(|d| match &d.content {
+                PassageContent::StoryData(story_data, _) => story_data.as_ref(),
+                _ => None
+            })
+            .and_then(|d| d.start.as_ref().and_then(|s| Some(s.as_str())))
+            .or_else(|| if self.passages.contains_key("Start") {
+                Some("Start")
+            } else {
+                None
+            })
+    }
 }
 
 impl<'a> Parser<'a> for StoryPassages {
@@ -898,6 +916,7 @@ Test Story
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
         assert!(warnings.is_empty());
+        assert_eq!(story.get_start_passage_name(), Some("Alt Start"));
     }
 
     #[test]
@@ -932,6 +951,7 @@ Test Story
                     .with_column(1)
             ]
         );
+        assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));
     }
 
     #[test]
@@ -949,6 +969,7 @@ blah blah
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
         assert_eq!(warnings, vec![Warning::new(WarningType::MissingStoryTitle)]);
+        assert_eq!(story.get_start_passage_name(), Some("Start"));
     }
 
     #[test]
@@ -978,5 +999,6 @@ Test Story
             warnings,
             vec![Warning::new(WarningType::MissingStartPassage)]
         );
+        assert_eq!(story.get_start_passage_name(), None);
     }
 }

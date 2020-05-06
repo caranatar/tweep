@@ -156,6 +156,20 @@ impl Story {
     pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> Output<Result<Self, ErrorList>> {
         StoryPassages::from_paths(input).into_result()
     }
+
+    /// If a start passage is configured in the StoryData, return the name of
+    /// that passage. If no start passage is configured, check for the presence
+    /// of a passage called "Start". If that passage exists, return that name,
+    /// otherwise return None
+    pub fn get_start_passage_name(&self) -> Option<&str> {
+        self.data.as_ref()
+            .and_then(|d| d.start.as_ref().and_then(|s| Some(s.as_str())))
+            .or_else(|| if self.passages.contains_key("Start") {
+                Some("Start")
+            } else {
+                None
+            })
+    }
 }
 
 impl std::convert::From<StoryPassages> for Story {
@@ -311,6 +325,7 @@ Test Story
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
+        assert_eq!(story.get_start_passage_name(), None);
         assert_eq!(story.title.is_some(), true);
         let title = story.title.unwrap();
         assert_eq!(title, "Test Story");
@@ -362,6 +377,7 @@ blah blah
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         assert_eq!(story.title, Some("Test Story".to_string()));
+        assert_eq!(story.get_start_passage_name(), Some("Start"));
 
         use crate::Positional;
         assert!(warnings.contains(
