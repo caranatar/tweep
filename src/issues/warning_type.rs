@@ -45,6 +45,31 @@ pub enum WarningType {
     DeadStartPassage(String),
 }
 
+#[cfg(feature = "warning-names")]
+impl WarningType {
+    /// Gets a string representation of a `WarningType` variant's name
+    ///
+    /// Enabled with "warning-names" feature
+    pub fn get_name(&self) -> &str {
+        match self {
+            WarningType::EscapedOpenSquare => "EscapedOpenSquare",
+            WarningType::EscapedCloseSquare => "EscapedCloseSquare",
+            WarningType::EscapedOpenCurly => "EscapedOpenCurly",
+            WarningType::EscapedCloseCurly => "EscapedCloseCurly",
+            WarningType::JsonError(_) => "JsonError",
+            WarningType::DuplicateStoryData => "DuplicateStoryData",
+            WarningType::DuplicateStoryTitle => "DuplicateStoryTitle",
+            WarningType::MissingStoryData => "MissingStoryData",
+            WarningType::MissingStoryTitle => "MissingStoryTitle",
+            WarningType::UnclosedLink => "UnclosedLink",
+            WarningType::WhitespaceInLink => "WhitespaceInLink",
+            WarningType::DeadLink(_) => "DeadLink",
+            WarningType::MissingStartPassage => "MissingStartPassage",
+            WarningType::DeadStartPassage(_) => "DeadStartPassage",
+        }
+    }
+}
+
 impl std::fmt::Display for WarningType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -77,5 +102,29 @@ impl std::fmt::Display for WarningType {
                     format!("Start passage set to {}, but no such passage found", start),
             }
         )
+    }
+}
+
+#[cfg(all(test, feature = "warning-names"))]
+mod tests {
+    use super::*;
+
+    #[cfg(feature = "warning-names")]
+    #[test]
+    fn test_names() {
+        assert_eq!(WarningType::EscapedOpenSquare.get_name(), "EscapedOpenSquare");
+        assert_eq!(WarningType::EscapedCloseSquare.get_name(), "EscapedCloseSquare");
+        assert_eq!(WarningType::EscapedOpenCurly.get_name(), "EscapedOpenCurly");
+        assert_eq!(WarningType::EscapedCloseCurly.get_name(), "EscapedCloseCurly");
+        assert_eq!(WarningType::JsonError("x".to_string()).get_name(), "JsonError");
+        assert_eq!(WarningType::DuplicateStoryData.get_name(), "DuplicateStoryData");
+        assert_eq!(WarningType::DuplicateStoryTitle.get_name(), "DuplicateStoryTitle");
+        assert_eq!(WarningType::MissingStoryData.get_name(), "MissingStoryData");
+        assert_eq!(WarningType::MissingStoryTitle.get_name(), "MissingStoryTitle");
+        assert_eq!(WarningType::UnclosedLink.get_name(), "UnclosedLink");
+        assert_eq!(WarningType::WhitespaceInLink.get_name(), "WhitespaceInLink");
+        assert_eq!(WarningType::DeadLink("x".to_string()).get_name(), "DeadLink");
+        assert_eq!(WarningType::MissingStartPassage.get_name(), "MissingStartPassage");
+        assert_eq!(WarningType::DeadStartPassage("x".to_string()).get_name(), "DeadStartPassage");
     }
 }

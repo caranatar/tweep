@@ -103,6 +103,16 @@ impl Warning {
     }
 }
 
+#[cfg(feature = "warning-names")]
+impl Warning {
+    /// Gets a string representation of a `Warning`'s `WarningType` variant name
+    ///
+    /// Enabled with "warning-names" feature
+    pub fn get_name(&self) -> &str {
+        self.warning_type.get_name()
+    }
+}
+
 impl Positional for Warning {
     fn get_position(&self) -> &Position {
         &self.position
@@ -150,5 +160,12 @@ mod tests {
         warning.set_row(20);
         assert_eq!(warning.get_referent(), Some(&Position::RowColumn(23, 5)));
         assert_eq!(warning.get_position(), &Position::RowColumn(20, 10));
+    }
+
+    #[test]
+    #[cfg(feature = "warning-names")]
+    fn test_name() {
+        let warning = Warning::new(WarningType::UnclosedLink);
+        assert_eq!(warning.get_name(), "UnclosedLink");
     }
 }
