@@ -54,6 +54,9 @@ pub struct TwineContent {
     /// The position of the passage
     pub position: Position,
 
+    /// The pid (Passage ID) of the passage
+    pub pid: usize,
+
     /// A list of parsed links in this content
     linked_passages: Vec<InternalTwineLink>,
 }
@@ -148,6 +151,7 @@ impl<'a> Parser<'a> for TwineContent {
             content,
             position: Position::default(),
             linked_passages,
+            pid: 1,
         }))
         .with_warnings(warnings)
     }

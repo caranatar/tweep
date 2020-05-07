@@ -66,6 +66,19 @@ impl<T> Output<T> {
         &self.output
     }
 
+    /// Returns a mutable reference to the output field
+    ///
+    /// # Examples
+    /// ```
+    /// use tweep::Output;
+    /// let mut out = Output::new(23 as usize);
+    /// *out.mut_output() = 5;
+    /// assert_eq!(*out.get_output(), 5);
+    /// ```
+    pub fn mut_output(&mut self) -> &mut T {
+        &mut self.output
+    }
+
     /// Returns `true` if the object has associated [`Warning`]s
     ///
     /// # Examples

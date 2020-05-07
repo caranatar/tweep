@@ -38,13 +38,29 @@ pub struct StoryPassages {
 }
 
 impl StoryPassages {
+    /// Renumber pids, starting at the given number and counting up
+    fn renumber_pids(&mut self, start: usize) {
+        let mut pid = start;
+        for passage in self.passages.values_mut() {
+            if let PassageContent::Normal(twine) = &mut passage.content {
+                twine.pid = pid;
+            }
+
+            pid += 1;
+        }
+    }
+
     /// Parses an input `String` and returns the result or a list of errors,
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
     pub fn from_string(input: String) -> Output<Result<Self, ErrorList>> {
         let slice: Vec<&str> = input.split('\n').collect();
-        StoryPassages::parse(&slice)
+        let mut out = StoryPassages::parse(&slice);
+        if out.is_ok() {
+            out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
+        }
+        out
     }
 
     /// Parses an input `&[&str]` and returns the result or a list of errors,
@@ -93,10 +109,10 @@ impl StoryPassages {
             warnings.append(&mut sub_warnings);
             warnings.append(&mut merge_warnings);
         }
-        
+
         let mut story_warnings = story.check();
         warnings.append(&mut story_warnings);
-        
+
         Output::new(Ok(story)).with_warnings(warnings)
     }
 
@@ -190,6 +206,8 @@ impl StoryPassages {
     /// The duplicate is ignored and the existing one is kept.
     pub fn merge_from(&mut self, mut other: Self) -> Vec<Warning> {
         let mut warnings = Vec::new();
+
+        other.renumber_pids(self.passages.len() + 1);
 
         match (&self.title, &other.title) {
             (None, Some(_)) => self.title = other.title,
@@ -313,16 +331,19 @@ impl StoryPassages {
     /// of a passage called "Start". If that passage exists, return that name,
     /// otherwise return None
     pub fn get_start_passage_name(&self) -> Option<&str> {
-        self.data.as_ref()
+        self.data
+            .as_ref()
             .and_then(|d| match &d.content {
                 PassageContent::StoryData(story_data, _) => story_data.as_ref(),
-                _ => None
+                _ => None,
             })
-            .and_then(|d| d.start.as_ref().and_then(|s| Some(s.as_str())))
-            .or_else(|| if self.passages.contains_key("Start") {
-                Some("Start")
-            } else {
-                None
+            .and_then(|d| d.start.as_deref())
+            .or_else(|| {
+                if self.passages.contains_key("Start") {
+                    Some("Start")
+                } else {
+                    None
+                }
             })
     }
 }
@@ -643,7 +664,7 @@ blah blah
         let mut file_two = File::create(file_path_two.clone())?;
         writeln!(file_two, "{}", input_two)?;
 
-        let paths = vec![ file_path_one, file_path_two ];
+        let paths = vec![file_path_one, file_path_two];
         let out = StoryPassages::from_paths(&paths);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();

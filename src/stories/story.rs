@@ -163,7 +163,7 @@ impl Story {
     /// otherwise return None
     pub fn get_start_passage_name(&self) -> Option<&str> {
         self.data.as_ref()
-            .and_then(|d| d.start.as_ref().and_then(|s| Some(s.as_str())))
+            .and_then(|d| d.start.as_deref())
             .or_else(|| if self.passages.contains_key("Start") {
                 Some("Start")
             } else {
