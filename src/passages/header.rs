@@ -217,7 +217,11 @@ impl<'a> Parser<'a> for PassageHeader {
             }
         }
 
-        let name = input[2..name_end_pos].trim().replace("\\", "");
+        let name = if name_end_pos > 2 {
+            input[2..name_end_pos].trim().replace("\\", "")
+        } else {
+            String::default()
+        };
         if name.is_empty() {
             errors.push(Error::new(ErrorType::EmptyName).with_column(3));
         }
