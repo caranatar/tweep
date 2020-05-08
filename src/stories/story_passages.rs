@@ -433,14 +433,20 @@ impl<'a> Parser<'a> for StoryPassages {
             }
         }
 
-        let story = StoryPassages {
-            title,
-            data,
-            passages,
-            scripts,
-            stylesheets,
-        };
-        Output::new(Ok(story)).with_warnings(warnings)
+        match errors {
+            Ok(_) => {
+                let story = StoryPassages {
+                    title,
+                    data,
+                    passages,
+                    scripts,
+                    stylesheets,
+                };
+                Output::new(Ok(story))
+            }
+            Err(e) => Output::new(Err(e)),
+        }
+        .with_warnings(warnings)
     }
 }
 
@@ -1021,5 +1027,12 @@ Test Story
             vec![Warning::new(WarningType::MissingStartPassage)]
         );
         assert_eq!(story.get_start_passage_name(), None);
+    }
+
+    #[test]
+    fn from_string_error() {
+        let input = "".to_string();
+        let out = StoryPassages::from_string(input);
+        assert!(out.is_err());
     }
 }
