@@ -109,6 +109,8 @@ pub use issues::ErrorList;
 pub use issues::ErrorType;
 pub use issues::Warning;
 pub use issues::WarningType;
+#[cfg(feature = "issue-context")]
+pub use issues::Contextual;
 
 mod output;
 pub use output::Output;
@@ -133,5 +135,13 @@ pub use positions::Position;
 pub use positions::Positional;
 
 mod stories;
+#[cfg(feature = "issue-context")]
+pub use stories::CodeMap;
+#[cfg(feature = "issue-context")]
+pub use stories::ContextErrorList;
+#[cfg(feature = "issue-context")]
+pub use stories::FileMap;
+#[cfg(feature = "issue-context")]
+pub use stories::StoryMap;
 pub use stories::Story;
 pub use stories::StoryPassages;
