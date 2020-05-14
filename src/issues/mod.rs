@@ -1,3 +1,8 @@
+#[cfg(feature = "issue-context")]
+mod contextual;
+#[cfg(feature = "issue-context")]
+pub use contextual::Contextual;
+
 mod error;
 pub use error::Error;
 
