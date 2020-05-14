@@ -1,6 +1,8 @@
 use crate::ErrorType;
 use crate::Position;
 use crate::Positional;
+#[cfg(feature = "issue-context")]
+use crate::Contextual;
 
 /// An error with an owned [`ErrorType`] and [`Position`]
 ///
@@ -13,6 +15,10 @@ pub struct Error {
 
     /// The location of the error
     pub position: Position,
+
+    /// Line of context for Error
+    #[cfg(feature = "issue-context")]
+    pub context_len: Option<usize>,
 }
 
 impl Error {
@@ -34,7 +40,20 @@ impl Error {
         Error {
             error_type,
             position: Position::StoryLevel,
+            #[cfg(feature = "issue-context")]
+            context_len: None,
         }
+    }
+}
+
+#[cfg(feature = "issue-context")]
+impl Contextual for Error {
+    fn get_context_len(&self) -> &Option<usize> {
+        &self.context_len
+    }
+
+    fn mut_context_len(&mut self) -> &mut Option<usize> {
+        &mut self.context_len
     }
 }
 
