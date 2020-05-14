@@ -164,7 +164,6 @@ impl<'a> Parser<'a> for PassageHeader {
         let mut tags: Vec<String> = Vec::new();
         if let Some(pos) = find_last_unescaped(&input[..name_end_pos], "[") {
             let end_pos = find_last_unescaped(&input[pos + 1..name_end_pos], "]");
-            name_end_pos = std::cmp::min(name_end_pos, pos);
 
             if let Some(p) = end_pos {
                 tags = input[pos + 1..pos + 1 + p]
@@ -175,6 +174,8 @@ impl<'a> Parser<'a> for PassageHeader {
             } else {
                 errors.push(Error::new(ErrorType::UnclosedTagBlock).with_column(pos + 1));
             }
+
+            name_end_pos = std::cmp::min(name_end_pos, pos);
         }
 
         // Check for unescaped special characters in the name portion. This also
