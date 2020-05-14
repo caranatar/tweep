@@ -1,3 +1,5 @@
+#[cfg(feature = "issue-context")]
+use crate::Contextual;
 use crate::Position;
 use crate::Positional;
 use crate::WarningType;
@@ -25,6 +27,10 @@ pub struct Warning {
 
     /// The location referenced by this warning
     pub referent: Option<Position>,
+
+    /// Line of context for Warning
+    #[cfg(feature = "issue-context")]
+    pub context_len: Option<usize>,
 }
 
 impl Warning {
@@ -42,6 +48,8 @@ impl Warning {
             warning_type,
             position: Position::StoryLevel,
             referent: None,
+            #[cfg(feature = "issue-context")]
+            context_len: None,
         }
     }
 
@@ -113,6 +121,17 @@ impl Warning {
     }
 }
 
+#[cfg(feature = "issue-context")]
+impl Contextual for Warning {
+    fn get_context_len(&self) -> &Option<usize> {
+        &self.context_len
+    }
+
+    fn mut_context_len(&mut self) -> &mut Option<usize> {
+        &mut self.context_len
+    }
+}
+
 impl Positional for Warning {
     fn get_position(&self) -> &Position {
         &self.position
@@ -120,6 +139,18 @@ impl Positional for Warning {
 
     fn mut_position(&mut self) -> &mut Position {
         &mut self.position
+    }
+
+    fn set_file(&mut self, file: String) {
+        self.mut_position().set_file(file.clone());
+
+        self.referent.as_mut().and_then(|referent| {
+            match referent {
+                Position::File(_, _, _) => (),
+                _ => referent.set_file(file),
+            };
+            Some(())
+        });
     }
 }
 
