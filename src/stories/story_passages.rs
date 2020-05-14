@@ -1,10 +1,18 @@
+#[cfg(feature = "issue-context")]
+use crate::CodeMap;
+#[cfg(feature = "issue-context")]
+use crate::ContextErrorList;
 use crate::Error;
 use crate::ErrorList;
+#[cfg(feature = "issue-context")]
+use crate::FileMap;
 use crate::Output;
 use crate::Parser;
 use crate::Passage;
 use crate::PassageContent;
 use crate::Positional;
+#[cfg(feature = "issue-context")]
+use crate::StoryMap;
 use crate::Warning;
 use crate::WarningType;
 use std::collections::HashMap;
@@ -35,7 +43,16 @@ pub struct StoryPassages {
 
     /// List of passages tagged with `stylesheet`
     pub stylesheets: Vec<Passage>,
+
+    /// StoryMap for this story
+    #[cfg(feature = "issue-context")]
+    pub story_map: StoryMap,
 }
+
+#[cfg(not(feature = "issue-context"))]
+type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
+#[cfg(feature = "issue-context")]
+type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 impl StoryPassages {
     /// Renumber pids, starting at the given number and counting up
@@ -50,25 +67,34 @@ impl StoryPassages {
         }
     }
 
+    #[cfg(feature = "issue-context")]
+    fn renumber_file_ids(&mut self, start: usize) {
+        if let StoryMap::Map(map) = &mut self.story_map {
+            for file in map.map.values_mut() {
+                file.id += start;
+            }
+        }
+    }
+
     /// Parses an input `String` and returns the result or a list of errors,
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string(input: String) -> Output<Result<Self, ErrorList>> {
+    pub fn from_string(input: String) -> ParseOutput {
         let slice: Vec<&str> = input.split('\n').collect();
-        let mut out = StoryPassages::parse(&slice);
-        if out.is_ok() {
-            out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
-        }
-        out
+        StoryPassages::from_slice(&slice)
     }
 
     /// Parses an input `&[&str]` and returns the result or a list of errors,
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_slice(input: &[&str]) -> Output<Result<Self, ErrorList>> {
-        StoryPassages::parse(input)
+    pub fn from_slice(input: &[&str]) -> ParseOutput {
+        let mut out = StoryPassages::parse(input);
+        if out.is_ok() {
+            out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
+        }
+        out
     }
 
     /// Parses a `StoryPassages` from the given [`Path`]. If the given path is
@@ -79,7 +105,7 @@ impl StoryPassages {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<P: AsRef<Path>>(input: P) -> Output<Result<Self, ErrorList>> {
+    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
         let out = StoryPassages::from_path_internal(input);
         let (mut res, mut warnings) = out.take();
         if res.is_ok() {
@@ -95,7 +121,7 @@ impl StoryPassages {
     /// additional information on how directories are handled.
     ///
     /// [`Path`]: std::path::Path
-    pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> Output<Result<Self, ErrorList>> {
+    pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> ParseOutput {
         let mut story = StoryPassages::default();
         let mut warnings = Vec::new();
         for path in input {
@@ -120,18 +146,27 @@ impl StoryPassages {
     /// contents into a `String` and uses `from_string` to parse it. If given a
     /// directory, finds the twee files, recurses with each file, then assembles
     /// the outputs into a single output
-    fn from_path_internal<P: AsRef<Path>>(input: P) -> Output<Result<Self, ErrorList>> {
+    fn from_path_internal<P: AsRef<Path>>(input: P) -> ParseOutput {
+        // Get the path
         let path: &Path = input.as_ref();
+
+        // Convert path to string
         let path_string: String = path.to_string_lossy().to_owned().to_string();
+
         if path.is_file() {
+            // If path is a file, get the file name part
             let file_name: String = path
                 .file_name()
                 .unwrap()
                 .to_string_lossy()
                 .to_owned()
                 .to_string();
+
+            // Open the file
             let file = File::open(path);
+
             if file.is_err() {
+                // Check for errors, return Error if we can't open file
                 let err_string = format!("{}", file.err().unwrap());
                 return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                     path_string,
@@ -139,10 +174,16 @@ impl StoryPassages {
                 ))
                 .into()));
             }
+
+            // Get the file
             let mut file = file.ok().unwrap();
+
+            // Slurp the file contents
             let mut contents = String::new();
             let res = file.read_to_string(&mut contents);
+
             if res.is_err() {
+                // Return an error if we can't read the file
                 let err_string = format!("{}", res.err().unwrap());
                 return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                     path_string,
@@ -150,6 +191,8 @@ impl StoryPassages {
                 ))
                 .into()));
             }
+
+            // Create the object from the contents, add file name to Positions
             StoryPassages::from_string(contents).with_file(file_name)
         } else if path.is_dir() {
             let dir = std::fs::read_dir(path);
@@ -208,6 +251,17 @@ impl StoryPassages {
         let mut warnings = Vec::new();
 
         other.renumber_pids(self.passages.len() + 1);
+
+        #[cfg(feature = "issue-context")]
+        {
+            if let StoryMap::Map(self_map) = &mut self.story_map {
+                other.renumber_file_ids(self_map.map.len());
+
+                if let StoryMap::Map(other_map) = other.story_map {
+                    self_map.map.extend(other_map.map);
+                }
+            }
+        }
 
         match (&self.title, &other.title) {
             (None, Some(_)) => self.title = other.title,
@@ -292,6 +346,8 @@ impl StoryPassages {
                                     warning_type: WarningType::DeadStartPassage(start.clone()),
                                     position: passage.header.position.clone(),
                                     referent: None,
+                                    #[cfg(feature = "issue-context")]
+                                    context_len: None, // TODO
                                 });
                             }
 
@@ -317,6 +373,8 @@ impl StoryPassages {
                             warning_type: WarningType::DeadLink(link.target.clone()),
                             position: link.position.clone(),
                             referent: None,
+                            #[cfg(feature = "issue-context")]
+                            context_len: Some(link.context_len),
                         });
                     }
                 }
@@ -349,10 +407,19 @@ impl StoryPassages {
 }
 
 impl<'a> Parser<'a> for StoryPassages {
+    #[cfg(not(feature = "issue-context"))]
     type Output = Output<Result<Self, ErrorList>>;
+    #[cfg(feature = "issue-context")]
+    type Output = Output<Result<Self, ContextErrorList>>;
     type Input = [&'a str];
 
     fn parse(input: &'a Self::Input) -> Self::Output {
+        #[cfg(feature = "issue-context")]
+        let story_map = StoryMap::File(FileMap {
+            id: 0,
+            contents: input.join("\n"),
+        });
+
         // The iterator we'll use to walk through the input
         let mut iter = input.iter();
         // The first line must be a header, skip over it so we don't have an
@@ -410,6 +477,8 @@ impl<'a> Parser<'a> for StoryPassages {
                             warning_type: WarningType::DuplicateStoryTitle,
                             position: passage.header.position.clone(),
                             referent: Some(existing.header.position.clone()),
+                            #[cfg(feature = "issue-context")]
+                            context_len: None, // TODO
                         };
                         warnings.push(warning);
                     } else {
@@ -422,6 +491,8 @@ impl<'a> Parser<'a> for StoryPassages {
                             warning_type: WarningType::DuplicateStoryData,
                             position: passage.header.position.clone(),
                             referent: Some(existing.header.position.clone()),
+                            #[cfg(feature = "issue-context")]
+                            context_len: None, // TODO
                         };
                         warnings.push(warning);
                     } else {
@@ -441,10 +512,19 @@ impl<'a> Parser<'a> for StoryPassages {
                     passages,
                     scripts,
                     stylesheets,
+                    #[cfg(feature = "issue-context")]
+                    story_map,
                 };
                 Output::new(Ok(story))
             }
-            Err(e) => Output::new(Err(e)),
+            Err(e) => {
+                #[cfg(feature = "issue-context")]
+                let e = ContextErrorList {
+                    error_list: e,
+                    story_map,
+                };
+                Output::new(Err(e))
+            }
         }
         .with_warnings(warnings)
     }
@@ -470,6 +550,11 @@ impl Positional for StoryPassages {
 
         for style in &mut self.stylesheets {
             style.set_file(file.clone());
+        }
+
+        #[cfg(feature = "issue-context")]
+        {
+            self.story_map.set_file(file.clone());
         }
     }
 }
@@ -505,12 +590,20 @@ Test Story
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
-        assert_eq!(
-            warnings[0],
-            Warning::new(WarningType::EscapedOpenSquare)
+        assert_eq!(warnings[0], {
+            let warning = Warning::new(WarningType::EscapedOpenSquare)
                 .with_row(7)
-                .with_column(5)
-        );
+                .with_column(5);
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        });
     }
 
     #[test]
@@ -548,13 +641,21 @@ Test Story
         let title_content = story.title.unwrap().content;
         if let PassageContent::StoryTitle(title) = title_content {
             assert_eq!(title.title, "Test Story");
-            assert_eq!(
-                warnings[0],
-                Warning::new(WarningType::EscapedOpenSquare)
+            assert_eq!(warnings[0], {
+                let warning = Warning::new(WarningType::EscapedOpenSquare)
                     .with_row(7)
                     .with_column(5)
-                    .with_file("test.twee".to_string())
-            );
+                    .with_file("test.twee".to_string());
+                #[cfg(not(feature = "issue-context"))]
+                {
+                    warning
+                }
+                #[cfg(feature = "issue-context")]
+                {
+                    use crate::Contextual;
+                    warning.with_context_len(2)
+                }
+            });
             assert_eq!(warnings[1], Warning::new(WarningType::MissingStoryData));
         } else {
             panic!("Expected StoryTitle");
@@ -615,19 +716,37 @@ blah blah
             panic!("Expected StoryTitle");
         }
 
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedOpenCurly)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedOpenCurly)
                 .with_column(6)
                 .with_row(10)
-                .with_file("test.twee".to_string())
-        ));
+                .with_file("test.twee".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedCloseSquare)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedCloseSquare)
                 .with_column(16)
                 .with_row(9)
-                .with_file("test2.tw".to_string())
-        ));
+                .with_file("test2.tw".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
         Ok(())
     }
@@ -685,19 +804,37 @@ blah blah
             panic!("Expected StoryTitle");
         }
 
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedOpenCurly)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedOpenCurly)
                 .with_column(6)
                 .with_row(10)
-                .with_file("test.twee".to_string())
-        ));
+                .with_file("test.twee".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedCloseSquare)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedCloseSquare)
                 .with_column(16)
                 .with_row(9)
-                .with_file("test2.tw".to_string())
-        ));
+                .with_file("test2.tw".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
         Ok(())
     }
@@ -910,12 +1047,15 @@ Test Story
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
-        assert_eq!(
-            warnings,
-            vec![Warning::new(WarningType::DeadLink("Dead link".to_string()))
-                .with_row(5)
-                .with_column(25)]
-        );
+        #[allow(unused_mut)]
+        let mut expected = vec![Warning::new(WarningType::DeadLink("Dead link".to_string()))
+            .with_row(5)
+            .with_column(23)];
+        #[cfg(feature = "issue-context")]
+        {
+            expected[0].context_len = Some(13);
+        }
+        assert_eq!(warnings, expected);
     }
 
     #[test]

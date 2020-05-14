@@ -9,15 +9,29 @@ pub struct TwineLink {
 
     /// The position of the link
     pub position: Position,
+
+    /// The length of the link text
+    #[cfg(feature = "issue-context")]
+    pub context_len: usize,
 }
 
 impl TwineLink {
     /// Creates a new link with a default [`Position`]
     ///
     /// [`Position`]: enum.Position.html
+    #[cfg(not(feature = "issue-context"))]
     pub fn new(target: String) -> Self {
         TwineLink {
             target,
+            position: Position::default(),
+        }
+    }
+
+    #[cfg(feature = "issue-context")]
+    pub fn new(target: String, context_len: usize) -> Self {
+        TwineLink {
+            target,
+            context_len,
             position: Position::default(),
         }
     }

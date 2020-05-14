@@ -6,6 +6,10 @@ use crate::StoryData;
 use crate::StoryPassages;
 use std::collections::HashMap;
 use std::path::Path;
+#[cfg(feature = "issue-context")]
+use crate::StoryMap;
+#[cfg(feature = "issue-context")]
+use crate::ContextErrorList;
 
 /// A parsed Twee story
 ///
@@ -118,14 +122,23 @@ pub struct Story {
 
     /// A list of the contents of any passages tagged with `stylesheet`
     pub stylesheets: Vec<String>,
+
+    /// StoryMap for this story
+    #[cfg(feature = "issue-context")]
+    pub story_map: StoryMap,
 }
+
+#[cfg(not(feature = "issue-context"))]
+type ParseOutput = Output<Result<Story, ErrorList>>;
+#[cfg(feature = "issue-context")]
+type ParseOutput = Output<Result<Story, ContextErrorList>>;
 
 impl Story {
     /// Parses an input `String` and returns the result or a list of errors,
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string(input: String) -> Output<Result<Self, ErrorList>> {
+    pub fn from_string(input: String) -> ParseOutput {
         StoryPassages::from_string(input).into_result()
     }
 
@@ -133,7 +146,7 @@ impl Story {
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_slice(input: &[&str]) -> Output<Result<Self, ErrorList>> {
+    pub fn from_slice(input: &[&str]) -> ParseOutput {
         StoryPassages::from_slice(input).into_result()
     }
 
@@ -145,7 +158,7 @@ impl Story {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<P: AsRef<Path>>(input: P) -> Output<Result<Self, ErrorList>> {
+    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
         StoryPassages::from_path(input).into_result()
     }
 
@@ -153,7 +166,7 @@ impl Story {
     /// additional information on how directories are handled.
     ///
     /// [`Path`]: std::path::Path
-    pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> Output<Result<Self, ErrorList>> {
+    pub fn from_paths<P: AsRef<Path>>(input: &[P]) -> ParseOutput {
         StoryPassages::from_paths(input).into_result()
     }
 
@@ -162,12 +175,15 @@ impl Story {
     /// of a passage called "Start". If that passage exists, return that name,
     /// otherwise return None
     pub fn get_start_passage_name(&self) -> Option<&str> {
-        self.data.as_ref()
+        self.data
+            .as_ref()
             .and_then(|d| d.start.as_deref())
-            .or_else(|| if self.passages.contains_key("Start") {
-                Some("Start")
-            } else {
-                None
+            .or_else(|| {
+                if self.passages.contains_key("Start") {
+                    Some("Start")
+                } else {
+                    None
+                }
             })
     }
 }
@@ -210,12 +226,17 @@ impl std::convert::From<StoryPassages> for Story {
 
         let passages = s.passages;
 
+        #[cfg(feature = "issue-context")]
+        let story_map = s.story_map;
+
         Story {
             title,
             data,
             passages,
             scripts,
             stylesheets,
+            #[cfg(feature = "issue-context")]
+            story_map,
         }
     }
 }
@@ -252,12 +273,20 @@ Test Story
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
-        assert_eq!(
-            warnings[0],
-            Warning::new(WarningType::EscapedOpenSquare)
+        assert_eq!(warnings[0], {
+            let warning = Warning::new(WarningType::EscapedOpenSquare)
                 .with_row(7)
-                .with_column(5)
-        );
+                .with_column(5);
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        });
     }
 
     #[test]
@@ -380,19 +409,37 @@ blah blah
         assert_eq!(story.get_start_passage_name(), Some("Start"));
 
         use crate::Positional;
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedOpenCurly)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedOpenCurly)
                 .with_column(6)
                 .with_row(10)
-                .with_file("test.twee".to_string())
-        ));
+                .with_file("test.twee".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
-        assert!(warnings.contains(
-            &Warning::new(WarningType::EscapedCloseSquare)
+        assert!(warnings.contains(&{
+            let warning = Warning::new(WarningType::EscapedCloseSquare)
                 .with_column(16)
                 .with_row(9)
-                .with_file("test2.tw".to_string())
-        ));
+                .with_file("test2.tw".to_string());
+            #[cfg(not(feature = "issue-context"))]
+            {
+                warning
+            }
+            #[cfg(feature = "issue-context")]
+            {
+                use crate::Contextual;
+                warning.with_context_len(2)
+            }
+        }));
 
         Ok(())
     }

@@ -10,4 +10,8 @@ pub(crate) struct InternalTwineLink {
 
     /// The row at which the link occurs within the passage content
     pub(crate) row_offset: usize,
+
+    /// The length of the link string
+    #[cfg(feature = "issue-context")]
+    pub(crate) context_len: usize,
 }
