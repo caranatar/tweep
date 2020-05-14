@@ -12,6 +12,7 @@ repository = "https://github.com/caranatar/tweep"
 
 [features]
 warning-names = []
+issue-context = []
 
 [dependencies]
 serde_json = "1.0"
