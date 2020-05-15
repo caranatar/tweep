@@ -103,6 +103,12 @@
 
 #![warn(missing_docs)]
 #![warn(missing_doc_code_examples)]
+mod context;
+pub use context::ContextPosition;
+pub use context::FullContext;
+pub use context::InnerContext;
+pub use context::PartialContext;
+
 mod issues;
 pub use issues::Error;
 pub use issues::ErrorList;
