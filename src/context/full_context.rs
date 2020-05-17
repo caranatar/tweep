@@ -15,15 +15,9 @@ pub struct FullContext<'a> {
 }
 
 impl<'a> FullContext<'a> {
-    /// Create a new `FullContext` with the given file name, start and end
-    /// positions, and contents
-    pub(crate) fn new<T: Into<Cow<'a, str>>>(
-        file_name: Option<String>,
-        start_position: ContextPosition,
-        end_position: ContextPosition,
-        contents: T,
-    ) -> Self {
-        let inner = InnerContext::new(file_name, start_position, end_position, contents);
+    /// Creates a new `FullContext` from the given optional filename and contents
+    pub fn from(file_name: Option<String>, contents: String) -> Self {
+        let inner = InnerContext::from(file_name, contents);
         FullContext { inner }
     }
 
