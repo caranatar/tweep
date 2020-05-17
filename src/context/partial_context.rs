@@ -39,12 +39,7 @@ mod tests {
     #[test]
     fn test_conversion() {
         let contents = "hail eris".to_string();
-        let c = FullContext::new(
-            None,
-            ContextPosition::new(1, 1),
-            ContextPosition::new(5, 23),
-            contents,
-        );
+        let c = FullContext::from(None, contents);
         let partial: PartialContext = c.into();
         assert_eq!(*partial.get_file_name(), None);
         assert_eq!(*partial.get_start_position(), ContextPosition::new(1, 1));
@@ -54,13 +49,8 @@ mod tests {
     fn from_subcontext() {
         let name = "name.ext".to_string();
         let contents = "hail eris".to_string();
-        let c = FullContext::new(
-            Some(name),
-            ContextPosition::new(1, 1),
-            ContextPosition::new(5, 23),
-            contents,
-        );
-        let sub = c.subcontext(ContextPosition::new(1, 6), ContextPosition::new(2, 3));
+        let c = FullContext::from(Some(name), contents);
+        let sub = c.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(2, 3));
         let partial: PartialContext = sub.into();
         assert_eq!(*partial.get_file_name(), Some("name.ext".to_string()));
         assert_eq!(*partial.get_start_position(), ContextPosition::new(1, 6));
