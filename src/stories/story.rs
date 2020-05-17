@@ -1,3 +1,4 @@
+#[cfg(not(feature = "issue-context"))]
 use crate::ErrorList;
 use crate::Output;
 use crate::Passage;

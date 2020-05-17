@@ -1,6 +1,4 @@
 #[cfg(feature = "issue-context")]
-use crate::CodeMap;
-#[cfg(feature = "issue-context")]
 use crate::ContextErrorList;
 use crate::ContextPosition;
 use crate::Error;
