@@ -1,6 +1,6 @@
 use crate::ErrorList;
+use crate::FullContext;
 use crate::Output;
-use crate::Parser;
 use crate::Position;
 use crate::Positional;
 
@@ -15,9 +15,9 @@ use crate::Positional;
 ///
 /// # Examples
 /// ```
-/// use tweep::{Parser, StoryTitle};
-/// let input:Vec<&str> = "Example Story".split('\n').collect();
-/// let out = StoryTitle::parse(&input);
+/// use tweep::{FullContext, StoryTitle};
+/// let context = FullContext::from(None, "Example Story".to_string());
+/// let out = StoryTitle::parse(context);
 /// assert_eq!(out.get_output().as_ref().ok().unwrap().title, "Example Story");
 /// ```
 #[derive(Debug)]
@@ -29,13 +29,11 @@ pub struct StoryTitle {
     pub position: Position,
 }
 
-impl<'a> Parser<'a> for StoryTitle {
-    type Output = Output<Result<Self, ErrorList>>;
-    type Input = [&'a str];
-
-    fn parse(input: &'a Self::Input) -> Self::Output {
+impl StoryTitle {
+    /// Parses a `StoryTitle` out of the given context
+    pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         Output::new(Ok(StoryTitle {
-            title: input.join("\n"),
+            title: context.get_contents().to_string(),
             position: Position::default(),
         }))
     }
@@ -61,8 +59,7 @@ mod tests {
 bar
 baz"#
             .to_string();
-        let v: Vec<&str> = input.split('\n').collect();
-        let out = StoryTitle::parse(&v);
+        let out = StoryTitle::parse(FullContext::from(None, input.clone()));
         assert!(!out.has_warnings());
         let (res, _) = out.take();
         assert!(res.is_ok());

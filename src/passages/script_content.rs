@@ -1,6 +1,6 @@
 use crate::ErrorList;
+use crate::FullContext;
 use crate::Output;
-use crate::Parser;
 use crate::Position;
 use crate::Positional;
 
@@ -24,13 +24,11 @@ pub struct ScriptContent {
     pub position: Position,
 }
 
-impl<'a> Parser<'a> for ScriptContent {
-    type Output = Output<Result<Self, ErrorList>>;
-    type Input = [&'a str];
-
-    fn parse(input: &'a Self::Input) -> Self::Output {
+impl ScriptContent {
+    /// Parses a `ScriptContent` out of the given context
+    pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         Output::new(Ok(ScriptContent {
-            content: input.join("\n"),
+            content: context.get_contents().to_string(),
             position: Position::default(),
         }))
     }
@@ -56,8 +54,7 @@ mod tests {
 bar
 baz"#
             .to_string();
-        let v: Vec<&str> = input.split('\n').collect();
-        let out = ScriptContent::parse(&v);
+        let out = ScriptContent::parse(FullContext::from(None, input.clone()));
         assert!(!out.has_warnings());
         let (res, _) = out.take();
         assert!(res.is_ok());

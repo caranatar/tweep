@@ -1,9 +1,9 @@
 #[cfg(feature = "issue-context")]
 use crate::Contextual;
 use crate::ErrorList;
+use crate::FullContext;
 use crate::InternalTwineLink;
 use crate::Output;
-use crate::Parser;
 use crate::Position;
 use crate::Positional;
 use crate::TwineLink;
@@ -34,11 +34,11 @@ use crate::WarningType;
 ///
 /// # Examples
 /// ```
-/// use tweep::{Parser, Position, TwineContent, TwineLink};
-/// let input:Vec<&str> = r#"This is a Twine content passage. It has a [[link]]
+/// use tweep::{FullContext, Position, TwineContent, TwineLink};
+/// let input = r#"This is a Twine content passage. It has a [[link]]
 ///And some [[other link->Another passage]]
-///"#.split('\n').collect();
-/// let out = TwineContent::parse(&input);
+///"#.to_string();
+/// let out = TwineContent::parse(FullContext::from(None, input));
 /// # assert!(!out.has_warnings());
 /// # assert_eq!(out.get_output().as_ref().ok().unwrap().get_links(), vec![
 ///    TwineLink { target: "link".to_string(), position: Position::RowColumn(1, 43), #[cfg(feature = "issue-context")] context_len: 8 },
@@ -83,16 +83,12 @@ impl TwineContent {
         }
         links
     }
-}
 
-impl<'a> Parser<'a> for TwineContent {
-    type Output = Output<Result<Self, ErrorList>>;
-    type Input = [&'a str];
-
-    fn parse(input: &'a Self::Input) -> Self::Output {
+    /// Parses a `TwineContent` out of the given context
+    pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         let mut linked_passages = Vec::new();
         let mut warnings = Vec::new();
-        for (row, line) in input.iter().enumerate() {
+        for (row, line) in context.get_contents().split('\n').enumerate() {
             let mut start = 0;
             loop {
                 start = match line[start..].find("[[") {
@@ -169,7 +165,7 @@ impl<'a> Parser<'a> for TwineContent {
             }
         }
 
-        let mut content = input.join("\n");
+        let mut content = context.get_contents().to_string();
         content.push('\n');
         Output::new(Ok(TwineContent {
             content,
@@ -197,10 +193,8 @@ mod tests {
 
     #[test]
     fn a_test() {
-        let x = "foo";
-        let y = "bar";
-        let v = vec![x, y];
-        let out = TwineContent::parse(&v);
+        let input = "foo\nbar".to_string();
+        let out = TwineContent::parse(FullContext::from(None, input));
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
@@ -209,11 +203,9 @@ mod tests {
 
     #[test]
     fn links() {
-        let input: Vec<&str> =
-            "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n"
-                .split("\n")
-                .collect();
-        let out = TwineContent::parse(&input);
+        let input =
+            "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n".to_string();
+        let out = TwineContent::parse(FullContext::from(None, input));
         let (res, warnings) = out.take();
         assert_eq!(warnings.is_empty(), true);
         assert_eq!(res.is_ok(), true);
@@ -237,10 +229,8 @@ mod tests {
 
     #[test]
     fn unclosed_link() {
-        let input: Vec<&str> = "blah [[unclosed\nlink]] blah blah\n\n"
-            .split("\n")
-            .collect();
-        let out = TwineContent::parse(&input);
+        let input = "blah [[unclosed\nlink]] blah blah\n\n".to_string();
+        let out = TwineContent::parse(FullContext::from(None, input));
         let (res, warnings) = out.take();
         let mut expected = Warning::new(WarningType::UnclosedLink);
         #[cfg(not(feature = "issue-context"))]
@@ -260,17 +250,16 @@ mod tests {
 
     #[test]
     fn whitespace_in_link() {
-        let input = vec![
-            "[[ foo]]",
-            "[[bar ]]",
-            "[[text|baz ]]",
-            "[[text| qux]]",
-            "[[quux <-text]]",
-            "[[ quuz<-text]]",
-            "[[text-> corge]]",
-            "[[text->grault ]]",
-        ];
-        let out = TwineContent::parse(&input);
+        let input = r#"[[ foo]]
+[[bar ]]
+[[text|baz ]]
+[[text| qux]]
+[[quux <-text]]
+[[ quuz<-text]]
+[[text-> corge]]
+[[text->grault ]]"#
+            .to_string();
+        let out = TwineContent::parse(FullContext::from(None, input));
         let (res, warnings) = out.take();
         #[cfg(feature = "issue-context")]
         let expected_lens = vec![8, 8, 13, 13, 15, 15, 16, 17];
@@ -285,7 +274,7 @@ mod tests {
                 }
                 #[cfg(feature = "issue-context")]
                 {
-                    warning.with_context_len(expected_lens[row-1])
+                    warning.with_context_len(expected_lens[row - 1])
                 }
             })
             .collect();

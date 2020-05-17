@@ -1,6 +1,5 @@
 use crate::ErrorList;
 use crate::Output;
-use crate::Parser;
 use crate::PassageContent;
 use crate::PassageHeader;
 use crate::Positional;
@@ -9,6 +8,8 @@ use crate::StoryData;
 use crate::StoryTitle;
 use crate::StylesheetContent;
 use crate::TwineContent;
+use crate::FullContext;
+use crate::ContextPosition;
 
 /// A complete Twee passage, including header and content
 ///
@@ -38,9 +39,11 @@ impl Passage {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Parser, Passage, PassageHeader, PassageContent, StoryTitle};
-    /// let header = PassageHeader::parse(":: StoryTitle");
-    /// let content = StoryTitle::parse(&vec!["A title"]);
+    /// # use tweep::{FullContext, Passage, PassageHeader, PassageContent, StoryTitle};
+    /// let context = FullContext::from(None, ":: StoryTitle".to_string());
+    /// let header = PassageHeader::parse(context);
+    /// let context = FullContext::from(None, "A title".to_string());
+    /// let content = StoryTitle::parse(context);
     /// let passage = Passage::new(header, content.into_result());
     /// assert!(passage.is_ok());
     /// ```
@@ -81,15 +84,11 @@ impl Passage {
     pub fn tags(&self) -> &Vec<String> {
         &self.header.tags
     }
-}
 
-impl<'a> Parser<'a> for Passage {
-    type Output = Output<Result<Self, ErrorList>>;
-    type Input = [&'a str];
-
-    fn parse(input: &'a Self::Input) -> Self::Output {
+    pub(crate) fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
+        let header_context = context.subcontext(context.line_range(1));
         // Parse the first line as the header
-        let mut header = PassageHeader::parse(&input[0]);
+        let mut header = PassageHeader::parse(header_context);
         header.set_row(1);
 
         // Since we can't know how to parse the passage contents if we don't know
@@ -103,24 +102,25 @@ impl<'a> Parser<'a> for Passage {
         let header_ref = header.get_output().as_ref().ok().unwrap();
 
         // Find the position of the last non-empty line
-        let mut iter = input.iter();
-        iter.rfind(|&&x| !x.is_empty());
+        let mut new_iter = context.get_contents().split('\n');
+        new_iter.rfind(|&x| !x.is_empty());
+        let len = new_iter.fold(0, |acc, _| acc + 1);
 
-        // Get the complete content input
-        let content_input: &[&str] = &input[1..=iter.len()];
+        // Create the content's context
+        let content_context = context.subcontext(ContextPosition::new(2,1)..=context.end_of_line(len+1));
 
         // Parse the content based on the type indicated by the header
         let content: Output<Result<PassageContent, ErrorList>>;
         content = if header_ref.name == "StoryTitle" {
-            StoryTitle::parse(content_input).into_result()
+            StoryTitle::parse(content_context).into_result()
         } else if header_ref.name == "StoryData" {
-            StoryData::parse(content_input).into_result()
+            StoryData::parse(content_context).into_result()
         } else if header_ref.has_tag("script") {
-            ScriptContent::parse(content_input).into_result()
+            ScriptContent::parse(content_context).into_result()
         } else if header_ref.has_tag("stylesheet") {
-            StylesheetContent::parse(content_input).into_result()
+            StylesheetContent::parse(content_context).into_result()
         } else {
-            TwineContent::parse(content_input).into_result()
+            TwineContent::parse(content_context).into_result()
         };
 
         // Assemble and return the output
@@ -159,8 +159,9 @@ impl Positional for Passage {
 mod tests {
     use super::*;
 
-    fn story_title_subtest(input: &[&str], expected_title: &str) {
-        let out = Passage::parse(input);
+    fn story_title_subtest(input: String, expected_title: &str) {
+        let context = FullContext::from(None, input);
+        let out = Passage::parse(context);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -177,20 +178,21 @@ mod tests {
 
     #[test]
     fn one_line_story_title() {
-        let input = vec![":: StoryTitle", "One line story title", "", ""];
-        story_title_subtest(&input, "One line story title");
+        let input = ":: StoryTitle\nOne line story title\n\n".to_string();
+        story_title_subtest(input, "One line story title");
     }
 
     #[test]
     fn multi_line_story_title() {
-        let input = vec!["::StoryTitle", "Multi", "Line", "Title"];
-        story_title_subtest(&input, "Multi\nLine\nTitle")
+        let input = "::StoryTitle\nMulti\nLine\nTitle".to_string();
+        story_title_subtest(input, "Multi\nLine\nTitle")
     }
-
+    
     #[test]
     fn script_passage() {
-        let input = vec![":: Script Passage [script]", "foo", "bar"];
-        let out = Passage::parse(&input);
+        let input = ":: Script Passage [script]\nfoo\nbar".to_string();
+        let context = FullContext::from(None, input);
+        let out = Passage::parse(context);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -209,8 +211,9 @@ mod tests {
 
     #[test]
     fn stylesheet_passage() {
-        let input = vec![":: Style Passage [stylesheet]", "foo", "bar"];
-        let out = Passage::parse(&input);
+        let input = ":: Style Passage [stylesheet]\nfoo\nbar".to_string();
+        let context = FullContext::from(None, input);
+        let out = Passage::parse(context);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -236,9 +239,9 @@ That
 
 
 
-"#;
-        let input: Vec<&str> = input_string.split("\n").collect();
-        let out = Passage::parse(&input);
+"#.to_string();
+        let context = FullContext::from(None, input_string);
+        let out = Passage::parse(context);
         assert_eq!(out.has_warnings(), false);
         let (res, _) = out.take();
         assert_eq!(res.is_ok(), true);

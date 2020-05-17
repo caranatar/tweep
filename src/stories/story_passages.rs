@@ -2,12 +2,13 @@
 use crate::CodeMap;
 #[cfg(feature = "issue-context")]
 use crate::ContextErrorList;
+use crate::ContextPosition;
 use crate::Error;
 use crate::ErrorList;
 #[cfg(feature = "issue-context")]
 use crate::FileMap;
+use crate::FullContext;
 use crate::Output;
-use crate::Parser;
 use crate::Passage;
 use crate::PassageContent;
 use crate::Positional;
@@ -20,6 +21,11 @@ use std::default::Default;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+
+#[cfg(not(feature = "issue-context"))]
+type StoryPassagesParseOutput = Output<Result<StoryPassages, ErrorList>>;
+#[cfg(feature = "issue-context")]
+type StoryPassagesParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 /// A parsed Twee story, that stores the full [`Passage`] object of each field
 ///
@@ -90,7 +96,8 @@ impl StoryPassages {
     ///
     /// [`Warning`]: struct.Warning.html
     pub fn from_slice(input: &[&str]) -> ParseOutput {
-        let mut out = StoryPassages::parse(input);
+        let context = FullContext::from(None, input.join("\n"));
+        let mut out = StoryPassages::parse(context);
         if out.is_ok() {
             out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
         }
@@ -404,29 +411,15 @@ impl StoryPassages {
                 }
             })
     }
-}
 
-impl<'a> Parser<'a> for StoryPassages {
-    #[cfg(not(feature = "issue-context"))]
-    type Output = Output<Result<Self, ErrorList>>;
-    #[cfg(feature = "issue-context")]
-    type Output = Output<Result<Self, ContextErrorList>>;
-    type Input = [&'a str];
+    pub(crate) fn parse(context: FullContext) -> StoryPassagesParseOutput {
+        let contents = context.get_contents();
 
-    fn parse(input: &'a Self::Input) -> Self::Output {
         #[cfg(feature = "issue-context")]
         let story_map = StoryMap::File(FileMap {
             id: 0,
-            contents: input.join("\n"),
+            contents: contents.to_string(),
         });
-
-        // The iterator we'll use to walk through the input
-        let mut iter = input.iter();
-        // The first line must be a header, skip over it so we don't have an
-        // empty slice
-        iter.next();
-        // The starting index of the next passage
-        let mut start = 0;
 
         // Story variables
         let mut title: Option<Passage> = None;
@@ -441,22 +434,35 @@ impl<'a> Parser<'a> for StoryPassages {
         // Running list of errors
         let mut errors = Ok(());
 
-        while start < input.len() {
-            // Find the start of the next passage using the sigil (::)
-            let pos = iter.position(|&x| x.trim_start().starts_with("::"));
+        // Get an iterator to go through each line
+        let mut iter = contents.split('\n').enumerate();
+        // The first line must be a header, skip over it so we don't have an
+        // empty slice
+        iter.next();
 
-            let pos = if let Some(p) = pos {
-                start + p + 1
-            } else {
-                input.len()
-            };
-            let passage_input = &input[start..pos];
+        // The starting position of the current passage
+        let mut start = ContextPosition::new(1, 1);
 
+        let end_line = context.get_end_position().line;
+        while start.line <= end_line {
+            let subcontext_start = start;
+            let subcontext_end =
+                if let Some((i, _)) = iter.find(|&(_, line)| line.trim_start().starts_with("::")) {
+                    context.end_of_line(i)
+                } else {
+                    context.get_end_position().clone()
+                };
+
+            let next_line = subcontext_end.line + 1;
+            let subcontext = context.subcontext(subcontext_start..=subcontext_end);
             // Parse the passage
-            let (mut res, mut passage_warnings) =
-                Passage::parse(passage_input).with_offset_row(start).take();
+            let (mut res, mut passage_warnings) = Passage::parse(subcontext)
+                .with_offset_row(start.line - 1)
+                .take();
             warnings.append(&mut passage_warnings);
-            start = pos;
+
+            // Update the start position
+            start = ContextPosition::new(next_line, 1);
 
             // If there's an error, update the row before returning
             if res.is_err() {

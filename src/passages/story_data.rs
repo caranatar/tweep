@@ -1,6 +1,6 @@
 use crate::ErrorList;
+use crate::FullContext;
 use crate::Output;
-use crate::Parser;
 use crate::Position;
 use crate::Positional;
 use crate::Warning;
@@ -53,14 +53,11 @@ pub struct StoryData {
     pub position: Position,
 }
 
-impl<'a> Parser<'a> for StoryData {
-    type Output = Output<Result<Option<Self>, ErrorList>>;
-    type Input = [&'a str];
-
-    fn parse(input: &'a Self::Input) -> Self::Output {
+impl StoryData {
+    /// Parses a `StoryData` out of the given context
+    pub fn parse(context: FullContext) -> Output<Result<Option<Self>, ErrorList>> {
         let mut warnings = Vec::new();
-        let str_input = input.join("\n");
-        let res: serde_json::Result<StoryData> = serde_json::from_str(&str_input);
+        let res: serde_json::Result<StoryData> = serde_json::from_str(context.get_contents());
 
         let story_data = if res.is_ok() {
             Some(res.ok().unwrap())
@@ -95,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_example() {
-        let input: Vec<&str> = r#"{
+        let input = r#"{
 	"ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
 	"format": "SugarCube",
 	"format-version": "2.28.2",
@@ -108,9 +105,8 @@ mod tests {
 	"zoom": 0.25
 }
 "#
-        .split("\n")
-        .collect();
-        let out = StoryData::parse(&input);
+        .to_string();
+        let out = StoryData::parse(FullContext::from(None, input));
         assert!(!out.has_warnings());
         let (res, _) = out.take();
         assert!(res.is_ok());
@@ -142,16 +138,15 @@ mod tests {
 
     #[test]
     fn test_malformed() {
-        let input: Vec<&str> = r#"{
+        let input = r#"{
 	"ifid": "D674C58C-DEFA-4F70-B7A2-27742230C0FC",
 	"format": "SugarCube",
 	"format-version": "2.28.2",
 	"start": "My Starting Passage",
 	"tag-colors": {
 "#
-        .split("\n")
-        .collect();
-        let out = StoryData::parse(&input);
+        .to_string();
+        let out = StoryData::parse(FullContext::from(None, input));
         assert!(out.has_warnings());
         let (res, warnings) = out.take();
         assert!(res.is_ok());

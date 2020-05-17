@@ -121,9 +121,6 @@ pub use issues::Contextual;
 mod output;
 pub use output::Output;
 
-mod parser;
-pub use parser::Parser;
-
 mod passages;
 pub(crate) use passages::InternalTwineLink;
 pub use passages::Passage;
