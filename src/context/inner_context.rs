@@ -39,6 +39,17 @@ mod util {
         }
         x
     }
+
+    pub(crate) fn end_of_line(line: usize, line_starts: &[usize], contents: &str) -> ContextPosition {
+        let start = line_starts[line - 1];
+        let len = if line >= line_starts.len() {
+            contents[start..].len()
+        } else {
+            // Don't want ending newline
+            line_starts[line] - start - 1
+        };
+        ContextPosition::new(line, len)
+    }
 }
 
 impl<'a> InnerContext<'a> {
@@ -71,21 +82,20 @@ impl<'a> InnerContext<'a> {
         boxed
     }
 
-    pub(crate) fn new<T: Into<Cow<'a, str>>>(
-        file_name: Option<String>,
-        start_position: ContextPosition,
-        end_position: ContextPosition,
-        contents: T,
-    ) -> Pin<Box<Self>> {
-        let contents = contents.into();
+    /// Given a 1-indexed line number, returns a position at the end of the line
+    pub(crate) fn end_of_line(&self, line: usize) -> ContextPosition {
+        ContextPosition::new(line, util::end_of_line(self.get_start_position().subposition(line, 1).line, self.get_line_starts(), self.contents.borrow()).column)
+    }
+
+    pub(crate) fn line_range(&self, line: usize) -> std::ops::RangeInclusive<ContextPosition> {
+        ContextPosition::new(line, 1)..=self.end_of_line(line)
+    }
+    
+    pub(crate) fn from(file_name: Option<String>, contents: String) -> Pin<Box<Self>> {
         let line_starts = util::line_starts(&contents).collect::<Vec<usize>>();
-        Self::new_with_line_starts(
-            file_name,
-            start_position,
-            end_position,
-            contents,
-            line_starts,
-        )
+        let start = ContextPosition::new(1,1);
+        let end = util::end_of_line(line_starts.len(), &line_starts, &contents);
+        Self::new_with_line_starts(file_name, start, end, contents, line_starts)
     }
 
     /// Gets a reference to the optional file name
@@ -108,6 +118,10 @@ impl<'a> InnerContext<'a> {
         let start = util::to_byte_index(&self.start_position, &self.line_starts, false);
         let end = util::to_byte_index(&self.end_position, &self.line_starts, true);
         &self.contents[start..end]
+    }
+
+    pub(crate) fn get_line_starts(&self) -> &[usize] {
+        self.line_starts.borrow()
     }
 
     pub(crate) fn subcontext(
