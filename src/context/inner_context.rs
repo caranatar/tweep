@@ -51,7 +51,11 @@ mod util {
         x
     }
 
-    pub(crate) fn end_of_line(line: usize, line_starts: &[usize], contents: &str) -> ContextPosition {
+    pub(crate) fn end_of_line(
+        line: usize,
+        line_starts: &[usize],
+        contents: &str,
+    ) -> ContextPosition {
         let start = line_starts[line - 1];
         let len = if line >= line_starts.len() {
             contents[start..].len()
@@ -95,16 +99,24 @@ impl<'a> InnerContext<'a> {
 
     /// Given a 1-indexed line number, returns a position at the end of the line
     pub(crate) fn end_of_line(&self, line: usize) -> ContextPosition {
-        ContextPosition::new(line, util::end_of_line(self.get_start_position().subposition(line, 1).line, self.get_line_starts(), self.contents.borrow()).column)
+        ContextPosition::new(
+            line,
+            util::end_of_line(
+                self.get_start_position().subposition(line, 1).line,
+                self.get_line_starts(),
+                self.contents.borrow(),
+            )
+            .column,
+        )
     }
 
     pub(crate) fn line_range(&self, line: usize) -> std::ops::RangeInclusive<ContextPosition> {
         ContextPosition::new(line, 1)..=self.end_of_line(line)
     }
-    
+
     pub(crate) fn from(file_name: Option<String>, contents: String) -> Pin<Box<Self>> {
         let line_starts = util::line_starts(&contents).collect::<Vec<usize>>();
-        let start = ContextPosition::new(1,1);
+        let start = ContextPosition::new(1, 1);
         let end = util::end_of_line(line_starts.len(), &line_starts, &contents);
         Self::new_with_line_starts(file_name, start, end, contents, line_starts)
     }
