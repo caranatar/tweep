@@ -3,13 +3,14 @@ use crate::Position;
 use crate::Positional;
 #[cfg(feature = "issue-context")]
 use crate::Contextual;
+use crate::FullContext;
 
 /// An error with an owned [`ErrorType`] and [`Position`]
 ///
 /// [`ErrorType`]: enum.ErrorType.html
 /// [`Position`]: enum.Position.html
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Error {
+#[derive(Debug, Eq, PartialEq)]
+pub struct Error<'a> {
     /// The type of error
     pub error_type: ErrorType,
 
@@ -19,29 +20,34 @@ pub struct Error {
     /// Line of context for Error
     #[cfg(feature = "issue-context")]
     pub context_len: Option<usize>,
+
+    /// The context of the error
+    context: FullContext<'a>,
 }
 
-impl Error {
+impl<'a> Error<'a> {
     /// Creates a new `Error` with the given [`ErrorType`] and a default
     /// [`Position`]
     ///
     /// # Examples
     /// ```
     /// use tweep::{Error, ErrorType};
-    /// # use tweep::{Position, Positional};
-    /// let error = Error::new(ErrorType::EmptyName);
+    /// # use tweep::{FullContext, Position, Positional};
+    /// # let context = FullContext::from(None, "::".to_string());
+    /// let error = Error::new(ErrorType::EmptyName, context);
     /// # assert_eq!(error.error_type, ErrorType::EmptyName);
     /// # assert_eq!(error.get_position(), &Position::default());
     /// ```
     ///
     /// [`ErrorType`]: enum.ErrorType.html
     /// [`Position`]: enum.Position.html
-    pub fn new(error_type: ErrorType) -> Self {
+    pub fn new(error_type: ErrorType, context: FullContext<'a>) -> Self {
         Error {
             error_type,
             position: Position::StoryLevel,
             #[cfg(feature = "issue-context")]
             context_len: None,
+            context,
         }
     }
 }
@@ -57,7 +63,7 @@ impl Contextual for Error {
     }
 }
 
-impl Positional for Error {
+impl Positional for Error<'_> {
     fn get_position(&self) -> &Position {
         &self.position
     }
@@ -67,13 +73,13 @@ impl Positional for Error {
     }
 }
 
-impl std::error::Error for Error {
+impl std::error::Error for Error<'_> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} at {}", self.error_type, self.position)
     }

@@ -11,6 +11,7 @@ use std::ptr::NonNull;
 /// information for both parsing, and if the appropriate feature(s) are enabled,
 /// user-level displaying of errors and warnings, to be held in a single struct
 /// with minimal unncessary copying.
+#[derive(Debug, Eq)]
 pub struct InnerContext<'a> {
     file_name: Option<String>,
     start_position: ContextPosition,
@@ -19,6 +20,16 @@ pub struct InnerContext<'a> {
     line_starts: Cow<'a, [usize]>,
     pub(crate) self_ref: NonNull<InnerContext<'a>>,
     _pin: PhantomPinned,
+}
+
+impl<'a> PartialEq for InnerContext<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.file_name == other.file_name
+            && self.start_position == other.start_position
+            && self.end_position == other.end_position
+            && self.contents == other.contents
+            && self.line_starts == other.line_starts
+    }
 }
 
 mod util {

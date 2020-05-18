@@ -5,6 +5,7 @@ use crate::FullContext;
 use crate::Output;
 use crate::Position;
 use crate::Positional;
+use crate::ContextPosition;
 
 use std::ops::Range;
 
@@ -101,7 +102,7 @@ impl PassageHeader {
             // Generate appropriate error
             errors.push(
                 if trimmed.starts_with("::") {
-                    let err = Error::new(ErrorType::LeadingWhitespace);
+                    let err = Error::new(ErrorType::LeadingWhitespace, context.subcontext(..));
                     #[cfg(not(feature = "issue-context"))]
                     {
                         err
@@ -111,7 +112,7 @@ impl PassageHeader {
                         err.with_context_len(input.len() - trimmed.len())
                     }
                 } else {
-                    let err = Error::new(ErrorType::MissingSigil);
+                    let err = Error::new(ErrorType::MissingSigil, context.subcontext(..));
                     #[cfg(not(feature = "issue-context"))]
                     {
                         err
@@ -141,7 +142,7 @@ impl PassageHeader {
             name_end_pos = pos;
 
             if find_last_unescaped(&input[range.end..], "[").is_some() {
-                let error = Error::new(ErrorType::MetadataBeforeTags).with_column(pos + 1);
+                let error = Error::new(ErrorType::MetadataBeforeTags, context.subcontext(ContextPosition::new(1, pos+1)..)).with_column(pos + 1);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     errors.push(error);
@@ -175,7 +176,7 @@ impl PassageHeader {
                     .map(|s| s.to_string())
                     .collect();
             } else {
-                let error = Error::new(ErrorType::UnclosedTagBlock).with_column(pos + 1);
+                let error = Error::new(ErrorType::UnclosedTagBlock, context.subcontext(ContextPosition::new(1, pos+1)..)).with_column(pos + 1);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     errors.push(error);
@@ -216,7 +217,7 @@ impl PassageHeader {
             // If there are unescaped special chars, return the error now. Pass
             // in 0 as the starting index because that way we don't have to
             // massage the character position of the error or warnings
-            let indices = check_name(&input[0..name_end_pos], c, e);
+            let indices = check_name(context.subcontext(ContextPosition::new(1,1)..=ContextPosition::new(1, name_end_pos)), c, e);
             if indices.is_err() {
                 errors.push(indices.err().unwrap());
             } else {
@@ -243,7 +244,7 @@ impl PassageHeader {
             String::default()
         };
         if name.is_empty() {
-            let error = Error::new(ErrorType::EmptyName).with_column(3);
+            let error = Error::new(ErrorType::EmptyName, context.subcontext(ContextPosition::new(1,3)..)).with_column(3);
             #[cfg(not(feature = "issue-context"))]
             {
                 errors.push(error);
@@ -365,8 +366,9 @@ fn guess_metadata_range(input: &str) -> Option<Range<usize>> {
 /// the name contains any instances of that character but escaped, return a list
 /// of locations in the name where the escaped character is found so that
 /// warnings can be generated
-fn check_name(input: &str, unescaped_str: &str, error: ErrorType) -> Result<Vec<usize>, Error> {
+fn check_name<'a>(context: FullContext<'a>, unescaped_str: &str, error: ErrorType) -> Result<Vec<usize>, Error<'a>> {
     let escaped_str = format!("\\{}", unescaped_str);
+    let input = context.get_contents();
 
     let escaped: Vec<usize> = input.match_indices(&escaped_str).map(|(i, _)| i).collect();
     let unescaped: Vec<usize> = input
@@ -378,7 +380,8 @@ fn check_name(input: &str, unescaped_str: &str, error: ErrorType) -> Result<Vec<
     if unescaped.is_empty() {
         Ok(escaped)
     } else {
-        let error = Error::new(error).with_column(unescaped[0] + 1);
+        let err_range = ContextPosition::new(1, unescaped[0] + 1)..=ContextPosition::new(1, unescaped[0]+1);
+        let error = Error::new(error, context.subcontext(err_range)).with_column(unescaped[0] + 1);
         #[cfg(not(feature = "issue-context"))]
         {
             Err(error)
@@ -397,11 +400,12 @@ mod tests {
     #[test]
     fn missing_sigil() {
         let context = FullContext::from(None, "An overgrown path".to_string());
+        let expected = context.subcontext(..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MissingSigil).with_column(1);
+            let error = Error::new(ErrorType::MissingSigil, expected).with_column(1);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -416,11 +420,12 @@ mod tests {
     #[test]
     fn leading_whitespace() {
         let context = FullContext::from(None, " :: An overgrown path".to_string());
+        let expected = context.subcontext(..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::LeadingWhitespace).with_column(1);
+            let error = Error::new(ErrorType::LeadingWhitespace, expected).with_column(1);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -435,11 +440,12 @@ mod tests {
     #[test]
     fn empty_name() {
         let context = FullContext::from(None, ":: [ tag1 tag2 ]".to_string());
+        let expected = context.subcontext(ContextPosition::new(1, 3)..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName).with_column(3);
+            let error = Error::new(ErrorType::EmptyName, expected).with_column(3);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -451,11 +457,12 @@ mod tests {
         });
 
         let context = FullContext::from(None, ":: \t".to_string());
+        let expected = context.subcontext(ContextPosition::new(1, 3)..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName).with_column(3);
+            let error = Error::new(ErrorType::EmptyName, expected).with_column(3);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -473,11 +480,12 @@ mod tests {
             None,
             ":: An overgrown path { \"size\": \"5,5\" } [ tag ]".to_string(),
         );
+        let expected = context.subcontext(ContextPosition::new(1, 22)..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MetadataBeforeTags).with_column(22);
+            let error = Error::new(ErrorType::MetadataBeforeTags, expected).with_column(22);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -501,11 +509,15 @@ mod tests {
                 None,
                 format!(":: {}An overgrown path [tag] {{ \"size\": \"5,5\" }}", c),
             );
+            let sub = context.subcontext(..); // copy context, essentially
+            
             let out = PassageHeader::parse(context);
             let (res, _) = out.take();
             assert_eq!(res.is_err(), true);
-            assert!(res.err().unwrap().errors.iter().any(|a| {
-                let expected = Error::new(e.clone()).with_column(4);
+            let errors = res.err().unwrap().errors;
+            assert!(errors.iter().any(|a| {
+                let sub = sub.subcontext(ContextPosition::new(1, 4)..=ContextPosition::new(1, 4));
+                let expected = Error::new(e.clone(), sub).with_column(4);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -520,12 +532,14 @@ mod tests {
                 ":: {}\\{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
                 c, c
             );
-            let context = FullContext::from(None, input);
+            let context = FullContext::from(None, input.clone());
+            let sub = context.subcontext(..);
             let out = PassageHeader::parse(context);
             let (res, _) = out.take();
             assert_eq!(res.is_err(), true);
             assert!(res.err().unwrap().errors.iter().any(|a| {
-                let expected = Error::new(e.clone()).with_column(4);
+                let sub = sub.subcontext(ContextPosition::new(1,4)..=ContextPosition::new(1,4));
+                let expected = Error::new(e.clone(), sub).with_column(4);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -539,12 +553,14 @@ mod tests {
                 ":: \\{}{}An overgrown path [tag] {{ \"size\": \"5,5\" }}",
                 c, c
             );
-            let context = FullContext::from(None, input);
+            let context = FullContext::from(None, input.clone());
+            let sub = context.subcontext(..);
             let out = PassageHeader::parse(context);
             let (res, _) = out.take();
-            assert_eq!(res.is_err(), true);
+            assert_eq!(res.is_err(), true);            
             assert!(res.err().unwrap().errors.iter().any(|a| {
-                let expected = Error::new(e.clone()).with_column(6);
+                let sub = sub.subcontext(ContextPosition::new(1,6)..=ContextPosition::new(1,6));
+                let expected = Error::new(e.clone(), sub).with_column(6);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -560,11 +576,12 @@ mod tests {
     #[test]
     fn unclosed_tags() {
         let context = FullContext::from(None, ":: An overgrown path [ tag1 tag2".to_string());
+        let expected = context.subcontext(ContextPosition::new(1, 22)..);
         let out = PassageHeader::parse(context);
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::UnclosedTagBlock).with_column(22);
+            let error = Error::new(ErrorType::UnclosedTagBlock, expected).with_column(22);
             #[cfg(not(feature = "issue-context"))]
             {
                 error

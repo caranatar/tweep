@@ -147,8 +147,10 @@ impl<T,E> Output<Result<T,E>> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Error, ErrorType};
-    /// let out:Output<Result<u32, Error>> = Output::new(Err(Error::new(ErrorType::EmptyName)));
+    /// use tweep::{Output, Error, ErrorType, FullContext};
+    /// let context = FullContext::from(None, "::".to_string());
+    /// let err = Error::new(ErrorType::EmptyName, context);
+    /// let out:Output<Result<u32, Error>> = Output::new(Err(err));
     /// assert!(out.is_err());
     /// ```
     pub fn is_err(&self) -> bool {

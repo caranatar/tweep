@@ -21,7 +21,7 @@ use std::io::Read;
 use std::path::Path;
 
 #[cfg(not(feature = "issue-context"))]
-type StoryPassagesParseOutput = Output<Result<StoryPassages, ErrorList>>;
+type StoryPassagesParseOutput<'a> = Output<Result<StoryPassages, ErrorList<'a>>>;
 #[cfg(feature = "issue-context")]
 type StoryPassagesParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
@@ -54,7 +54,7 @@ pub struct StoryPassages {
 }
 
 #[cfg(not(feature = "issue-context"))]
-type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
+type ParseOutput<'a> = Output<Result<StoryPassages, ErrorList<'a>>>;
 #[cfg(feature = "issue-context")]
 type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
@@ -110,7 +110,7 @@ impl StoryPassages {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
+    pub fn from_path<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
         let out = StoryPassages::from_path_internal(input);
         let (mut res, mut warnings) = out.take();
         if res.is_ok() {
@@ -151,7 +151,7 @@ impl StoryPassages {
     /// contents into a `String` and uses `from_string` to parse it. If given a
     /// directory, finds the twee files, recurses with each file, then assembles
     /// the outputs into a single output
-    fn from_path_internal<P: AsRef<Path>>(input: P) -> ParseOutput {
+    fn from_path_internal<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
         // Get the path
         let path: &Path = input.as_ref();
 
@@ -176,7 +176,7 @@ impl StoryPassages {
                 return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                     path_string,
                     err_string,
-                ))
+                ), FullContext::from(None, file_name.clone()))
                 .into()));
             }
 
@@ -193,12 +193,13 @@ impl StoryPassages {
                 return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                     path_string,
                     err_string,
-                ))
+                ), FullContext::from(None, file_name.clone()))
                 .into()));
             }
 
             // Create the object from the contents, add file name to Positions
-            StoryPassages::from_string(contents).with_file(file_name)
+            let context = FullContext::from(Some(file_name.clone()), contents);
+            StoryPassages::from_context(context).with_file(file_name)
         } else if path.is_dir() {
             let dir = std::fs::read_dir(path);
             if dir.is_err() {
@@ -206,7 +207,7 @@ impl StoryPassages {
                 return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                     path_string,
                     err_string,
-                ))
+                ), FullContext::from(None, "TODO: DIR CONTEXT".to_string()))
                 .into()));
             }
             let dir = dir.ok().unwrap();
@@ -241,7 +242,7 @@ impl StoryPassages {
             Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
                 path_string,
                 err_string,
-            ))
+            ), FullContext::from(None, "TODO: SOME CONTEXT???".to_string()))
             .into()))
         }
     }

@@ -4,13 +4,13 @@ use crate::Positional;
 /// A wrapper type for a list of [`Error`]s
 ///
 /// [`Error`]: struct.Error.html
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ErrorList {
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct ErrorList<'a> {
     /// The list of `Error`s
-    pub errors: Vec<Error>,
+    pub errors: Vec<Error<'a>>,
 }
 
-impl ErrorList {
+impl<'a> ErrorList<'a> {
     /// Creates a new `ErrorList`
     ///
     /// # Examples
@@ -27,12 +27,13 @@ impl ErrorList {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType};
+    /// use tweep::{Error, ErrorList, ErrorType, FullContext};
     /// let mut errors = ErrorList::default();
-    /// errors.push(Error::new(ErrorType::EmptyName));
-    /// # assert_eq!(errors.errors, vec![ Error::new(ErrorType::EmptyName) ]);
+    /// let context = FullContext::from(None, "::".to_string());
+    /// errors.push(Error::new(ErrorType::EmptyName, context.subcontext(..)));
+    /// # assert_eq!(errors.errors, vec![ Error::new(ErrorType::EmptyName, context.subcontext(..)) ]);
     /// ```
-    pub fn push(&mut self, error: Error) {
+    pub fn push(&mut self, error: Error<'a>) {
         self.errors.push(error);
     }
 
@@ -69,32 +70,35 @@ impl ErrorList {
     /// When given one `Ok` and one `Err`, the output will have the same list of
     /// errors as the `Err` variant:
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType, Position};
+    /// use tweep::{Error, ErrorList, ErrorType, FullContext, Position};
     /// let mut left:Result<u8, ErrorList> = Ok(5);
+    /// let right_context = FullContext::from(None, "::".to_string());
     /// let mut right:Result<&str, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::EmptyName) ],
+    ///     errors: vec![ Error::new(ErrorType::EmptyName, right_context.subcontext(..)) ],
     /// });
     /// let merged = ErrorList::merge(&mut left, &mut right);
-    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName) ]);
+    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName, right_context.subcontext(..)) ]);
     /// ```
     ///
     /// When given two `Err` variants, the output will be have an `ErrorList`
     /// that contains the errors in `right` appended to the errors in `left`
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType, Position};
+    /// use tweep::{Error, ErrorList, ErrorType, FullContext, Position};
+    /// let left_context = FullContext::from(None, "::".to_string());
     /// let mut left:Result<u8, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::EmptyName) ],
+    ///     errors: vec![ Error::new(ErrorType::EmptyName, left_context.subcontext(..)) ],
     /// });
+    /// let right_context = FullContext::from(None, " :: Blah".to_string());
     /// let mut right:Result<&str, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::LeadingWhitespace) ],
+    ///     errors: vec![ Error::new(ErrorType::LeadingWhitespace, right_context.subcontext(..)) ],
     /// });
     /// let merged = ErrorList::merge(&mut left, &mut right);
-    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName), Error::new(ErrorType::LeadingWhitespace) ]);
+    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName, left_context.subcontext(..)), Error::new(ErrorType::LeadingWhitespace, right_context.subcontext(..)) ]);
     /// ```
     pub fn merge<T, U>(
-        left: &mut Result<T, ErrorList>,
-        right: &mut Result<U, ErrorList>,
-    ) -> Result<(), ErrorList> {
+        left: &mut Result<T, ErrorList<'a>>,
+        right: &mut Result<U, ErrorList<'a>>,
+    ) -> Result<(), ErrorList<'a>> {
         let mut errors = Vec::new();
         if left.is_err() {
             errors.append(&mut left.as_mut().err().unwrap().errors);
@@ -112,7 +116,7 @@ impl ErrorList {
     }
 }
 
-impl Positional for ErrorList {
+impl Positional for ErrorList<'_> {
     fn set_row(&mut self, row: usize) {
         for error in &mut self.errors {
             error.set_row(row);
@@ -144,13 +148,13 @@ impl Positional for ErrorList {
     }
 }
 
-impl std::error::Error for ErrorList {
+impl std::error::Error for ErrorList<'_> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }
 
-impl std::fmt::Display for ErrorList {
+impl std::fmt::Display for ErrorList<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut res = Ok(());
         for error in &self.errors {
@@ -163,7 +167,7 @@ impl std::fmt::Display for ErrorList {
     }
 }
 
-impl std::convert::From<Error> for ErrorList {
+impl<'a> std::convert::From<Error<'a>> for ErrorList<'a> {
     fn from(e: Error) -> ErrorList {
         let mut error_list = ErrorList::default();
         error_list.push(e);
@@ -175,28 +179,31 @@ impl std::convert::From<Error> for ErrorList {
 mod tests {
     use super::*;
     use crate::ErrorType;
+    use crate::FullContext;
 
     #[test]
     fn basic() {
         let mut errs = ErrorList::default();
         assert!(errs.is_empty());
-        errs.push(Error::new(ErrorType::EmptyName));
+        let context = FullContext::from(None, "::".to_string());
+        let expected = context.subcontext(..);
+        errs.push(Error::new(ErrorType::EmptyName, context));
         assert!(!errs.is_empty());
-        assert_eq!(errs.errors, vec![Error::new(ErrorType::EmptyName)]);
+        assert_eq!(errs.errors, vec![Error::new(ErrorType::EmptyName, expected)]);
     }
 
     #[test]
     fn positional() {
         let mut errs = ErrorList::default();
         assert!(errs.is_empty());
-        errs.push(Error::new(ErrorType::EmptyName));
-        errs.push(Error::new(ErrorType::MissingSigil));
+        errs.push(Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string())));
+        errs.push(Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string())));
         assert!(!errs.is_empty());
         assert_eq!(
             errs.errors,
             vec![
-                Error::new(ErrorType::EmptyName),
-                Error::new(ErrorType::MissingSigil)
+                Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string())),
+                Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))
             ]
         );
 
@@ -222,33 +229,38 @@ mod tests {
         let mut ok_left = Ok(());
         let mut ok_right = Ok(());
 
-        let error_list_left = ErrorList {
-            errors: vec![Error::new(ErrorType::EmptyName)],
+        fn error_list_left() -> ErrorList<'static> {
+            ErrorList {
+                errors: vec![Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string()))],
+            }
         };
-        let error_list_right = ErrorList {
-            errors: vec![Error::new(ErrorType::MissingSigil)],
+        fn error_list_right() -> ErrorList<'static> {
+            ErrorList {
+                errors: vec![Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))],
+            }
         };
-
-        let mut err_left: Result<(), _> = Err(error_list_left.clone());
-        let mut err_right: Result<(), _> = Err(error_list_right.clone());
 
         assert!(ErrorList::merge(&mut ok_left, &mut ok_right).is_ok());
 
-        let errs = ErrorList::merge(&mut err_left.clone(), &mut ok_right)
+        let mut err_left: Result<(), _> = Err(error_list_left());
+        let errs = ErrorList::merge(&mut err_left, &mut ok_right)
             .err()
             .unwrap();
-        assert_eq!(&errs.errors, &error_list_left.errors);
+        assert_eq!(&errs.errors, &error_list_left().errors);
 
-        let errs = ErrorList::merge(&mut ok_left, &mut err_right.clone())
+        let mut err_right: Result<(), _> = Err(error_list_right());
+        let errs = ErrorList::merge(&mut ok_left, &mut err_right)
             .err()
             .unwrap();
-        assert_eq!(&errs.errors, &error_list_right.errors);
+        assert_eq!(&errs.errors, &error_list_right().errors);
 
+        let mut err_left: Result<(), _> = Err(error_list_left());
+        let mut err_right: Result<(), _> = Err(error_list_right());
         let errs = ErrorList::merge(&mut err_left, &mut err_right)
             .err()
             .unwrap();
-        let mut expected = error_list_left.errors.clone();
-        expected.append(&mut error_list_right.errors.clone());
+        let mut expected = error_list_left().errors;
+        expected.append(&mut error_list_right().errors);
         assert_eq!(errs.errors, expected);
     }
 }

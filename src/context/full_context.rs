@@ -9,6 +9,7 @@ use std::pin::Pin;
 ///
 /// [`Pin`]: std::pin::Pin
 /// [`InnerContext`]: struct.InnerContext.html
+#[derive(Debug, Eq, PartialEq)]
 pub struct FullContext<'a> {
     inner: Pin<Box<InnerContext<'a>>>,
 }

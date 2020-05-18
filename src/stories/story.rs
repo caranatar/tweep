@@ -130,7 +130,7 @@ pub struct Story {
 }
 
 #[cfg(not(feature = "issue-context"))]
-type ParseOutput = Output<Result<Story, ErrorList>>;
+type ParseOutput<'a> = Output<Result<Story, ErrorList<'a>>>;
 #[cfg(feature = "issue-context")]
 type ParseOutput = Output<Result<Story, ContextErrorList>>;
 
@@ -139,16 +139,8 @@ impl Story {
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string(input: String) -> ParseOutput {
+    pub fn from_string<'a>(input: String) -> ParseOutput<'a> {
         StoryPassages::from_string(input).into_result()
-    }
-
-    /// Parses an input `&[&str]` and returns the result or a list of errors,
-    /// along with a list of any [`Warning`]s
-    ///
-    /// [`Warning`]: struct.Warning.html
-    pub fn from_slice(input: &[&str]) -> ParseOutput {
-        StoryPassages::from_slice(input).into_result()
     }
 
     /// Parses a `Story` from the given [`Path`]. If the given path is a file,
@@ -159,7 +151,7 @@ impl Story {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
+    pub fn from_path<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
         StoryPassages::from_path(input).into_result()
     }
 
@@ -193,7 +185,7 @@ impl std::convert::From<StoryPassages> for Story {
     fn from(s: StoryPassages) -> Story {
         let title = match s.title {
             Some(c) => match c.content {
-                PassageContent::StoryTitle(t) => Some(t.title),
+                PassageContent::StoryTitle(t) => Some(t.title.to_string()),
                 _ => panic!("Expected title to be StoryTitle"),
             },
             None => None,

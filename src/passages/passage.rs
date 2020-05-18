@@ -47,10 +47,10 @@ impl Passage {
     /// let passage = Passage::new(header, content.into_result());
     /// assert!(passage.is_ok());
     /// ```
-    pub fn new(
-        header: Output<Result<PassageHeader, ErrorList>>,
-        content: Output<Result<PassageContent, ErrorList>>,
-    ) -> Output<Result<Self, ErrorList>> {
+    pub fn new<'a>(
+        header: Output<Result<PassageHeader, ErrorList<'a>>>,
+        content: Output<Result<PassageContent, ErrorList<'a>>>,
+    ) -> Output<Result<Self, ErrorList<'a>>> {
         // Move out the header and its associated warnings
         let (mut header_res, mut warnings) = header.take();
 
