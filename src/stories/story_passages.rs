@@ -84,17 +84,12 @@ impl StoryPassages {
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string(input: String) -> ParseOutput {
-        let slice: Vec<&str> = input.split('\n').collect();
-        StoryPassages::from_slice(&slice)
+    pub fn from_string<'a>(input: String) -> ParseOutput<'a> {
+        let context = FullContext::from(None, input);
+        StoryPassages::from_context(context)
     }
 
-    /// Parses an input `&[&str]` and returns the result or a list of errors,
-    /// along with a list of any [`Warning`]s
-    ///
-    /// [`Warning`]: struct.Warning.html
-    pub fn from_slice(input: &[&str]) -> ParseOutput {
-        let context = FullContext::from(None, input.join("\n"));
+    pub(crate) fn from_context<'a>(context: FullContext<'a>) -> ParseOutput<'a> {
         let mut out = StoryPassages::parse(context);
         if out.is_ok() {
             out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
@@ -148,7 +143,7 @@ impl StoryPassages {
     }
 
     /// Does the heavy lifting for `from_path`. If given a file, reads its
-    /// contents into a `String` and uses `from_string` to parse it. If given a
+    /// contents into a `String` and uses `from_context` to parse it. If given a
     /// directory, finds the twee files, recurses with each file, then assembles
     /// the outputs into a single output
     fn from_path_internal<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
