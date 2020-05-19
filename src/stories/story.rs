@@ -273,15 +273,7 @@ Test Story
                 WarningType::EscapedOpenSquare,
                 context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         });
     }
 
@@ -415,15 +407,7 @@ blah blah
                 WarningType::EscapedOpenCurly,
                 context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
@@ -432,15 +416,7 @@ blah blah
                 WarningType::EscapedCloseSquare,
                 context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         Ok(())

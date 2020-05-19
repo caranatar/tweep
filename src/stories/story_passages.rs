@@ -352,8 +352,6 @@ impl StoryPassages {
                                     warning_type: WarningType::DeadStartPassage(start.clone()),
                                     position: passage.header.position.clone(),
                                     referent: None,
-                                    #[cfg(feature = "issue-context")]
-                                    context_len: None, // TODO
                                     context: Some(passage.context.clone()),
                                 });
                             }
@@ -380,8 +378,6 @@ impl StoryPassages {
                             warning_type: WarningType::DeadLink(link.target.clone()),
                             position: link.position.clone(),
                             referent: None,
-                            #[cfg(feature = "issue-context")]
-                            context_len: Some(link.context_len),
                             context: Some(link.context.clone()),
                         });
                     }
@@ -479,8 +475,6 @@ impl StoryPassages {
                             warning_type: WarningType::DuplicateStoryTitle,
                             position: passage.header.position.clone(),
                             referent: Some(existing.context.clone()),
-                            #[cfg(feature = "issue-context")]
-                            context_len: None, // TODO
                             context: Some(passage.context.clone()),
                         };
                         warnings.push(warning);
@@ -494,8 +488,6 @@ impl StoryPassages {
                             warning_type: WarningType::DuplicateStoryData,
                             position: passage.header.position.clone(),
                             referent: Some(existing.context.clone()),
-                            #[cfg(feature = "issue-context")]
-                            context_len: None, // TODO
                             context: Some(passage.context.clone()),
                         };
                         warnings.push(warning);
@@ -573,15 +565,7 @@ Test Story
                 WarningType::EscapedOpenSquare,
                 context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         });
     }
 
@@ -626,15 +610,7 @@ Test Story
                     WarningType::EscapedOpenSquare,
                     context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
                 );
-                #[cfg(not(feature = "issue-context"))]
-                {
-                    warning
-                }
-                #[cfg(feature = "issue-context")]
-                {
-                    use crate::Contextual;
-                    warning.with_context_len(2)
-                }
+                warning
             });
             assert_eq!(
                 warnings[1],
@@ -705,15 +681,7 @@ blah blah
                 WarningType::EscapedOpenCurly,
                 context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
@@ -722,15 +690,7 @@ blah blah
                 WarningType::EscapedCloseSquare,
                 context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         Ok(())
@@ -795,15 +755,7 @@ blah blah
                 WarningType::EscapedOpenCurly,
                 context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
@@ -812,15 +764,7 @@ blah blah
                 WarningType::EscapedCloseSquare,
                 context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
             );
-            #[cfg(not(feature = "issue-context"))]
-            {
-                warning
-            }
-            #[cfg(feature = "issue-context")]
-            {
-                use crate::Contextual;
-                warning.with_context_len(2)
-            }
+            warning
         }));
 
         Ok(())
@@ -1044,10 +988,6 @@ Test Story
             WarningType::DeadLink("Dead link".to_string()),
             FullContext::from(None, "TODO: add context for passages".to_string()),
         )];
-        #[cfg(feature = "issue-context")]
-        {
-            expected[0].context_len = Some(13);
-        }
         assert_eq!(warnings, expected);
     }
 

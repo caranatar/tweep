@@ -114,8 +114,6 @@ pub use issues::ErrorList;
 pub use issues::ErrorType;
 pub use issues::Warning;
 pub use issues::WarningType;
-#[cfg(feature = "issue-context")]
-pub use issues::Contextual;
 
 mod output;
 pub use output::Output;

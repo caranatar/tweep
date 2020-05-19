@@ -1,7 +1,5 @@
 use crate::ErrorType;
 use crate::Position;
-#[cfg(feature = "issue-context")]
-use crate::Contextual;
 use crate::FullContext;
 
 /// An error with an owned [`ErrorType`] and [`Position`]
@@ -15,10 +13,6 @@ pub struct Error {
 
     /// The location of the error
     pub position: Position,
-
-    /// Line of context for Error
-    #[cfg(feature = "issue-context")]
-    pub context_len: Option<usize>,
 
     /// The context of the error
     pub context: Option<FullContext>,
@@ -44,8 +38,6 @@ impl Error {
         Error {
             error_type,
             position: Position::StoryLevel,
-            #[cfg(feature = "issue-context")]
-            context_len: None,
             context: context.into(),
         }
     }
@@ -60,17 +52,6 @@ impl Clone for Error {
             context_len: self.context_len.clone(),
             context: self.context.as_ref().and_then(|ctx| Some(ctx.clone())),
         }
-    }
-}
-
-#[cfg(feature = "issue-context")]
-impl Contextual for Error {
-    fn get_context_len(&self) -> &Option<usize> {
-        &self.context_len
-    }
-
-    fn mut_context_len(&mut self) -> &mut Option<usize> {
-        &mut self.context_len
     }
 }
 

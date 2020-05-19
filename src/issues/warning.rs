@@ -1,5 +1,4 @@
 #[cfg(feature = "issue-context")]
-use crate::Contextual;
 use crate::FullContext;
 use crate::Position;
 use crate::WarningType;
@@ -30,10 +29,6 @@ pub struct Warning {
 
     /// The location referenced by this warning
     pub referent: Option<FullContext>,
-
-    /// Line of context for Warning
-    #[cfg(feature = "issue-context")]
-    pub context_len: Option<usize>,
 }
 
 impl Warning {
@@ -52,8 +47,6 @@ impl Warning {
             context: context.into(),
             position: Position::StoryLevel,
             referent: None,
-            #[cfg(feature = "issue-context")]
-            context_len: None,
         }
     }
 
@@ -122,17 +115,6 @@ impl Warning {
     /// Enabled with "warning-names" feature
     pub fn get_name(&self) -> &str {
         self.warning_type.get_name()
-    }
-}
-
-#[cfg(feature = "issue-context")]
-impl Contextual for Warning {
-    fn get_context_len(&self) -> &Option<usize> {
-        &self.context_len
-    }
-
-    fn mut_context_len(&mut self) -> &mut Option<usize> {
-        &mut self.context_len
     }
 }
 
