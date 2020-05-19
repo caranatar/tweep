@@ -2,9 +2,13 @@ use crate::ErrorList;
 use crate::CodeMap;
 use crate::Error;
 
+/// An ErrorList with an attached CodeMap
 #[derive(Debug)]
 pub struct ContextErrorList {
+    /// The underlying ErrorList
     pub error_list: ErrorList,
+
+    /// The attached CodeMap
     pub code_map: CodeMap,
 }
 

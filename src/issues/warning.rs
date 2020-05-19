@@ -22,6 +22,7 @@ pub struct Warning {
     /// The warning type
     pub warning_type: WarningType,
 
+    /// The context of this Warning
     pub context: Option<FullContext>,
 
     /// The location of the warning

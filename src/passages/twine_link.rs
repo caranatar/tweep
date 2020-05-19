@@ -7,6 +7,7 @@ pub struct TwineLink {
     /// The name of the passage this link points to
     pub target: String,
 
+    /// The context of the link
     pub context: FullContext,
 
     /// The position of the link

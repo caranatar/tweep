@@ -121,6 +121,7 @@ impl FullContext {
         &self.end_position
     }
 
+    /// Gets the span of this context as line bytes within the contents
     pub fn get_byte_range(&self) -> Range<usize> {
         let start = util::to_byte_index(&self.start_position, &self.line_starts, false);
         let end = util::to_byte_index(&self.end_position, &self.line_starts, true);

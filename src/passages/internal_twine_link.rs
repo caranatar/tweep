@@ -7,6 +7,7 @@ pub(crate) struct InternalTwineLink {
     /// The name of the target Passage
     pub(crate) target: String,
 
+    /// The context of the link
     pub(crate) context: FullContext,
 
     /// The column at which the link occurs within the row
