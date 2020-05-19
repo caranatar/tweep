@@ -175,7 +175,7 @@ mod tests {
         assert_eq!(warning.get_position(), &Position::StoryLevel);
 
         let ref_context = FullContext::from(None, "foo bar".to_string());
-        warning.set_referent(ref_context.subcontext(..));
+        warning.set_referent(ref_context.clone());
         assert!(warning.has_referent());
         assert_eq!(warning.get_referent(), Some(&ref_context));
         assert_eq!(warning.get_position(), &Position::StoryLevel);
@@ -185,8 +185,8 @@ mod tests {
     fn unchanged_referent() {
         let context = FullContext::from(None, "[[".to_string());
         let ref_context = FullContext::from(None, "foo bar".to_string());
-        let mut warning =
-            Warning::new(WarningType::UnclosedLink, context).with_referent(ref_context.subcontext(..));
+        let warning = Warning::new(WarningType::UnclosedLink, context)
+            .with_referent(ref_context.clone());
         // Prove changing the Warning's Position doesn't change the referent
         warning.set_column(10);
         warning.set_row(20);

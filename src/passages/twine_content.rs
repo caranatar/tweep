@@ -75,13 +75,13 @@ impl TwineContent {
                 TwineLink {
                     target: link.target.clone(),
                     position: self.position.clone(),
-                    context: link.context.subcontext(..),
                     #[cfg(feature = "issue-context")]
                     context_len: link.context_len,
                 }
                 .with_offset_column(link.col_offset)
                 .with_offset_row(link.row_offset),
             );
+                context: link.context.clone(),
         }
         links
     }
@@ -90,7 +90,6 @@ impl TwineContent {
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         let mut linked_passages = Vec::new();
         let mut warnings = Vec::new();
-        println!("The context about to crash {:?}", context);
         for (row, line) in context.get_contents().split('\n').enumerate() {
             let mut start = 0;
             loop {
@@ -157,7 +156,7 @@ impl TwineContent {
 
                 linked_passages.push(InternalTwineLink {
                     target: linked_passage.to_string(),
-                    context: context.subcontext(ContextPosition::new(row + 1, start + 1)..=ContextPosition::new(row + 1, start + context_len)),
+                    context: link_context.clone(),
                     col_offset: start,
                     row_offset: row,
                     #[cfg(feature = "issue-context")]
@@ -209,7 +208,7 @@ mod tests {
         let input =
             "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n".to_string();
         let context = FullContext::from(None, input);
-        let out = TwineContent::parse(context.subcontext(..));
+        let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
         assert_eq!(warnings.is_empty(), true);
         assert_eq!(res.is_ok(), true);
@@ -234,7 +233,7 @@ mod tests {
     #[test]
     fn unclosed_link() {
         let context = FullContext::from(None, "blah [[unclosed\nlink]] blah blah\n\n".to_string());
-        let out = TwineContent::parse(context.subcontext(..));
+        let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
         let mut expected = Warning::new(WarningType::UnclosedLink, context.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(1, 15)));
         #[cfg(not(feature = "issue-context"))]
@@ -264,7 +263,7 @@ mod tests {
 [[text->grault ]]"#
         .to_string();
         let context = FullContext::from(None, input);
-        let out = TwineContent::parse(context.subcontext(..));
+        let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
         let expected_lens = vec![8, 8, 13, 13, 15, 15, 16, 17];
         let expected_warnings: Vec<Warning> = (1 as usize..9)

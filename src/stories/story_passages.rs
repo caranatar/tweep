@@ -271,10 +271,10 @@ impl StoryPassages {
             (Some(self_title), Some(other_title)) => {
                 let mut warning = Warning::new(
                     WarningType::DuplicateStoryTitle,
-                    other_title.context.subcontext(..),
+                    other_title.context.clone(),
                 );
                 *warning.mut_position() = other_title.header.get_position().clone();
-                warning.set_referent(self_title.context.subcontext(..));
+                warning.set_referent(self_title.context.clone());
                 warnings.push(warning)
             }
             _ => (),
@@ -285,10 +285,10 @@ impl StoryPassages {
             (Some(self_data), Some(other_data)) => {
                 let mut warning = Warning::new(
                     WarningType::DuplicateStoryData,
-                    other_data.context.subcontext(..),
+                    other_data.context.clone(),
                 );
                 *warning.mut_position() = other_data.header.get_position().clone();
-                warning.set_referent(self_data.context.subcontext(..));
+                warning.set_referent(self_data.context.clone());
                 warnings.push(warning);
             }
             _ => (),
@@ -357,7 +357,7 @@ impl StoryPassages {
                                     referent: None,
                                     #[cfg(feature = "issue-context")]
                                     context_len: None, // TODO
-                                    context: Some(passage.context.subcontext(..)),
+                                    context: Some(passage.context.clone()),
                                 });
                             }
 
@@ -385,10 +385,7 @@ impl StoryPassages {
                             referent: None,
                             #[cfg(feature = "issue-context")]
                             context_len: Some(link.context_len),
-                            context: Some(FullContext::from(
-                                None,
-                                "TODO: add context for passages".to_string(),
-                            )),
+                            context: Some(link.context.clone()),
                         });
                     }
                 }
@@ -486,10 +483,10 @@ impl StoryPassages {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryTitle,
                             position: passage.header.position.clone(),
-                            referent: Some(existing.context.subcontext(..)),
+                            referent: Some(existing.context.clone()),
                             #[cfg(feature = "issue-context")]
                             context_len: None, // TODO
-                            context: Some(passage.context.subcontext(..)),
+                            context: Some(passage.context.clone()),
                         };
                         warnings.push(warning);
                     } else {
@@ -501,10 +498,10 @@ impl StoryPassages {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryData,
                             position: passage.header.position.clone(),
-                            referent: Some(existing.context.subcontext(..)),
+                            referent: Some(existing.context.clone()),
                             #[cfg(feature = "issue-context")]
                             context_len: None, // TODO
-                            context: Some(passage.context.subcontext(..)),
+                            context: Some(passage.context.clone()),
                         };
                         warnings.push(warning);
                     } else {
@@ -956,7 +953,7 @@ Link to [[A passage]]
 "#
         .to_string();
         let context = FullContext::from(None, input);
-        let out = StoryPassages::from_context(context.subcontext(..));
+        let out = StoryPassages::from_context(context.clone());
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -1006,7 +1003,7 @@ Discarded Duplicate Title
 "#
         .to_string();
         let context = FullContext::from(None, input);
-        let out = StoryPassages::from_context(context.subcontext(..));
+        let out = StoryPassages::from_context(context.clone());
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
@@ -1020,7 +1017,7 @@ Discarded Duplicate Title
             )
             .with_column(1)
             .with_row(15)
-            .with_referent(story.title.as_ref().unwrap().context.subcontext(..))
+            .with_referent(story.title.as_ref().unwrap().context.clone())
         );
         assert_eq!(story.title.is_some(), true);
         let title_content = story.title.unwrap().content;
@@ -1176,7 +1173,7 @@ Test Story
 "#
         .to_string();
         let context = FullContext::from(None, input);
-        let out = StoryPassages::from_context(context.subcontext(..));
+        let out = StoryPassages::from_context(context.clone());
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();

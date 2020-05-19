@@ -59,7 +59,7 @@ impl Clone for Error {
             position: self.position.clone(),
             #[cfg(feature = "issue-context")]
             context_len: self.context_len.clone(),
-            context: self.context.as_ref().and_then(|ctx| Some(ctx.subcontext(..))),
+            context: self.context.as_ref().and_then(|ctx| Some(ctx.clone())),
         }
     }
 }

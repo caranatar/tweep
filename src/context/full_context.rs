@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 /// A context that represents a span of twee code with a beginning, end, and
 /// contents, along with a file name and some helper functions
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FullContext {
     file_name: Option<String>,
     start_position: ContextPosition,
