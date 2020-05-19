@@ -1,5 +1,4 @@
 use crate::Error;
-use crate::Positional;
 
 /// A wrapper type for a list of [`Error`]s
 ///
@@ -116,38 +115,6 @@ impl ErrorList {
     }
 }
 
-impl Positional for ErrorList {
-    fn set_row(&mut self, row: usize) {
-        for error in &mut self.errors {
-            error.set_row(row);
-        }
-    }
-
-    fn set_column(&mut self, col: usize) {
-        for error in &mut self.errors {
-            error.set_column(col);
-        }
-    }
-
-    fn set_file(&mut self, file: String) {
-        for error in &mut self.errors {
-            error.set_file(file.clone());
-        }
-    }
-
-    fn offset_column(&mut self, offset: usize) {
-        for error in &mut self.errors {
-            error.offset_column(offset);
-        }
-    }
-
-    fn offset_row(&mut self, offset: usize) {
-        for error in &mut self.errors {
-            error.offset_row(offset);
-        }
-    }
-}
-
 impl std::error::Error for ErrorList {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
@@ -206,22 +173,6 @@ mod tests {
                 Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))
             ]
         );
-
-        errs.set_row(23);
-        assert!(errs.errors.iter().all(|e| e.get_row() == Some(23)));
-
-        errs.set_column(5);
-        assert!(errs.errors.iter().all(|e| e.get_column() == Some(5)));
-
-        errs.offset_row(9);
-        assert!(errs.errors.iter().all(|e| e.get_row() == Some(32)));
-
-        errs.offset_column(18);
-        assert!(errs.errors.iter().all(|e| e.get_column() == Some(23)));
-
-        let file_name = "file.ext";
-        errs.set_file(file_name.to_string());
-        assert!(errs.errors.iter().all(|e| e.get_file() == Some(file_name)));
     }
 
     #[test]

@@ -1,34 +1,11 @@
 use crate::ErrorList;
 use crate::CodeMap;
-use crate::Positional;
 use crate::Error;
 
 #[derive(Debug)]
 pub struct ContextErrorList {
     pub error_list: ErrorList,
     pub code_map: CodeMap,
-}
-
-impl Positional for ContextErrorList {
-    fn set_row(&mut self, row: usize) {
-        self.error_list.set_row(row);
-    }
-
-    fn set_column(&mut self, col: usize) {
-        self.error_list.set_column(col);
-    }
-
-    fn set_file(&mut self, file: String) {
-        self.error_list.set_file(file.clone());
-    }
-
-    fn offset_column(&mut self, offset: usize) {
-        self.error_list.offset_column(offset);
-    }
-
-    fn offset_row(&mut self, offset: usize) {
-        self.error_list.offset_row(offset);
-    }
 }
 
 impl std::error::Error for ContextErrorList {

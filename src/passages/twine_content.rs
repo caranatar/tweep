@@ -6,7 +6,6 @@ use crate::FullContext;
 use crate::InternalTwineLink;
 use crate::Output;
 use crate::Position;
-use crate::Positional;
 use crate::TwineLink;
 use crate::Warning;
 use crate::WarningType;
@@ -71,17 +70,14 @@ impl TwineContent {
     pub fn get_links(&self) -> Vec<TwineLink> {
         let mut links = Vec::new();
         for link in &self.linked_passages {
-            links.push(
-                TwineLink {
-                    target: link.target.clone(),
-                    position: self.position.clone(),
-                    #[cfg(feature = "issue-context")]
-                    context_len: link.context_len,
-                }
-                .with_offset_column(link.col_offset)
-                .with_offset_row(link.row_offset),
-            );
+            println!("get_links: {} bottom text", link.context.get_contents());
+            links.push(TwineLink {
+                target: link.target.clone(),
+                position: self.position.clone(),
                 context: link.context.clone(),
+                #[cfg(feature = "issue-context")]
+                context_len: link.context_len,
+            });
         }
         links
     }
@@ -101,9 +97,13 @@ impl TwineContent {
                     Some(x) => start + x,
                     None => {
                         warnings.push({
-                            let warning = Warning::new(WarningType::UnclosedLink, context.subcontext(ContextPosition::new(row+1, start+1)..=ContextPosition::new(row+1, line.len())))
-                                .with_column(start + 1)
-                                .with_row(row + 1);
+                            let warning = Warning::new(
+                                WarningType::UnclosedLink,
+                                context.subcontext(
+                                    ContextPosition::new(row + 1, start + 1)
+                                        ..=ContextPosition::new(row + 1, line.len()),
+                                ),
+                            );
                             #[cfg(not(feature = "issue-context"))]
                             {
                                 warning
@@ -116,6 +116,7 @@ impl TwineContent {
                         break;
                     }
                 };
+                let link_context = context.subcontext(ContextPosition::new(row+1, start+1)..=ContextPosition::new(row+1, end+2));
                 let link_content = &line[start + 2..end];
                 let context_len = link_content.len() + 4;
                 let linked_passage = if link_content.contains('|') {
@@ -140,9 +141,10 @@ impl TwineContent {
                     || linked_passage.ends_with(char::is_whitespace)
                 {
                     warnings.push({
-                        let warning = Warning::new(WarningType::WhitespaceInLink, context.subcontext(ContextPosition::new(row+1, start+1)..=ContextPosition::new(row+1, start+context_len)))
-                            .with_column(start + 1)
-                            .with_row(row + 1);
+                        let warning = Warning::new(
+                            WarningType::WhitespaceInLink,
+                            link_context.clone(),
+                        );
                         #[cfg(not(feature = "issue-context"))]
                         {
                             warning
@@ -179,16 +181,6 @@ impl TwineContent {
     }
 }
 
-impl Positional for TwineContent {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -219,12 +211,13 @@ mod tests {
             .map(|row| {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
-                    context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row-1])),
+                    context.subcontext(
+                        ContextPosition::new(row, 1)
+                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                    ),
                     #[cfg(feature = "issue-context")]
                     expected_lens[row - 1],
                 )
-                .with_column(1)
-                .with_row(row)
             })
             .collect();
         assert_eq!(content.get_links(), expected_links);
@@ -235,15 +228,18 @@ mod tests {
         let context = FullContext::from(None, "blah [[unclosed\nlink]] blah blah\n\n".to_string());
         let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
-        let mut expected = Warning::new(WarningType::UnclosedLink, context.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(1, 15)));
+        let mut expected = Warning::new(
+            WarningType::UnclosedLink,
+            context.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(1, 15)),
+        );
         #[cfg(not(feature = "issue-context"))]
         {
-            expected = expected.with_row(1).with_column(6);
+            expected = expected;
         }
         #[cfg(feature = "issue-context")]
         {
             use crate::Contextual;
-            expected = expected.with_row(1).with_column(6).with_context_len(10);
+            expected = expected.with_context_len(10);
         }
         assert_eq!(warnings, vec![expected]);
         assert_eq!(res.is_ok(), true);
@@ -261,16 +257,20 @@ mod tests {
 [[ quuz<-text]]
 [[text-> corge]]
 [[text->grault ]]"#
-        .to_string();
+            .to_string();
         let context = FullContext::from(None, input);
         let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
         let expected_lens = vec![8, 8, 13, 13, 15, 15, 16, 17];
         let expected_warnings: Vec<Warning> = (1 as usize..9)
             .map(|row| {
-                let warning = Warning::new(WarningType::WhitespaceInLink, context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row - 1])))
-                    .with_row(row)
-                    .with_column(1);
+                let warning = Warning::new(
+                    WarningType::WhitespaceInLink,
+                    context.subcontext(
+                        ContextPosition::new(row, 1)
+                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                    ),
+                );
                 #[cfg(not(feature = "issue-context"))]
                 {
                     warning
@@ -291,12 +291,13 @@ mod tests {
             .map(|row| {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
-                    context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row - 1])),
+                    context.subcontext(
+                        ContextPosition::new(row, 1)
+                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                    ),
                     #[cfg(feature = "issue-context")]
                     expected_lens[row - 1],
                 )
-                .with_column(1)
-                .with_row(row)
             })
             .collect();
         assert_eq!(content.get_links(), expected_links);

@@ -1,3 +1,7 @@
+#[cfg(feature = "issue-context")]
+use crate::CodeMap;
+#[cfg(feature = "issue-context")]
+use crate::ContextErrorList;
 #[cfg(not(feature = "issue-context"))]
 use crate::ErrorList;
 use crate::Output;
@@ -7,10 +11,6 @@ use crate::StoryData;
 use crate::StoryPassages;
 use std::collections::HashMap;
 use std::path::Path;
-#[cfg(feature = "issue-context")]
-use crate::CodeMap;
-#[cfg(feature = "issue-context")]
-use crate::ContextErrorList;
 
 /// A parsed Twee story
 ///
@@ -261,18 +261,18 @@ Test Story
 
 "#
         .to_string();
-        use crate::Positional;
-        use crate::FullContext;
         use crate::ContextPosition;
+        use crate::FullContext;
         let out = Story::from_string(input.clone());
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let context = FullContext::from(None, input);
         assert_eq!(warnings[0], {
-            let warning = Warning::new(WarningType::EscapedOpenSquare, context.subcontext(ContextPosition::new(7,5)..=ContextPosition::new(7, 6)))
-                .with_row(7)
-                .with_column(5);
+            let warning = Warning::new(
+                WarningType::EscapedOpenSquare,
+                context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -320,7 +320,10 @@ Test Story
         assert_eq!(story.title.is_some(), true);
         let title = story.title.unwrap();
         assert_eq!(title, "Test Story");
-        assert_eq!(warnings[0], Warning::new(WarningType::MissingStoryData, None));
+        assert_eq!(
+            warnings[0],
+            Warning::new(WarningType::MissingStoryData, None)
+        );
 
         Ok(())
     }
@@ -404,15 +407,14 @@ blah blah
         assert_eq!(story.title, Some("Test Story".to_string()));
         assert_eq!(story.get_start_passage_name(), Some("Start"));
 
-        use crate::Positional;
-        use crate::FullContext;
         use crate::ContextPosition;
+        use crate::FullContext;
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedOpenCurly, context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)))
-                .with_column(6)
-                .with_row(10)
-                .with_file("test.twee".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedOpenCurly,
+                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -426,10 +428,10 @@ blah blah
 
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedCloseSquare, context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)))
-                .with_column(16)
-                .with_row(9)
-                .with_file("test2.tw".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedCloseSquare,
+                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning

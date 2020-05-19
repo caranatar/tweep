@@ -134,7 +134,6 @@ pub use passages::TwineLink;
 
 mod positions;
 pub use positions::Position;
-pub use positions::Positional;
 
 mod stories;
 #[cfg(feature = "issue-context")]

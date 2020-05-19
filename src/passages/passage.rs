@@ -2,7 +2,6 @@ use crate::ErrorList;
 use crate::Output;
 use crate::PassageContent;
 use crate::PassageHeader;
-use crate::Positional;
 use crate::ScriptContent;
 use crate::StoryData;
 use crate::StoryTitle;
@@ -92,8 +91,7 @@ impl Passage {
     pub(crate) fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         let header_context = context.subcontext(context.line_range(1));
         // Parse the first line as the header
-        let mut header = PassageHeader::parse(header_context);
-        header.set_row(1);
+        let header = PassageHeader::parse(header_context);
 
         // Since we can't know how to parse the passage contents if we don't know
         // the passage type from the header, we can't continue
@@ -128,34 +126,7 @@ impl Passage {
         };
 
         // Assemble and return the output
-        Self::new(header, content.with_offset_row(1), context)
-    }
-}
-
-impl Positional for Passage {
-    fn set_row(&mut self, row: usize) {
-        self.header.set_row(row);
-        self.content.set_row(row);
-    }
-
-    fn set_column(&mut self, col: usize) {
-        self.header.set_column(col);
-        self.content.set_column(col);
-    }
-
-    fn offset_column(&mut self, offset: usize) {
-        self.header.offset_column(offset);
-        self.content.offset_column(offset);
-    }
-
-    fn offset_row(&mut self, offset: usize) {
-        self.header.offset_row(offset);
-        self.content.offset_row(offset);
-    }
-
-    fn set_file(&mut self, file: String) {
-        self.header.set_file(file.clone());
-        self.content.set_file(file);
+        Self::new(header, content, context)
     }
 }
 

@@ -2,7 +2,6 @@ use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
 use crate::Position;
-use crate::Positional;
 
 /// The content of a special passage with the `StoryTitle` name, which will be
 /// used as the title for a parsed story
@@ -36,16 +35,6 @@ impl StoryTitle {
             title: context.get_contents().to_string(),
             position: Position::default(),
         }))
-    }
-}
-
-impl Positional for StoryTitle {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
     }
 }
 

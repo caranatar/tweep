@@ -1,5 +1,4 @@
 use crate::Position;
-use crate::Positional;
 use crate::ScriptContent;
 use crate::StoryData;
 use crate::StoryTitle;
@@ -25,31 +24,6 @@ pub enum PassageContent {
 
     /// A passage that is tagged with `stylesheet` and contains CSS
     Stylesheet(StylesheetContent),
-}
-
-impl Positional for PassageContent {
-    fn get_position(&self) -> &Position {
-        match self {
-            PassageContent::Normal(p) => p.get_position(),
-            PassageContent::StoryTitle(t) => t.get_position(),
-            PassageContent::StoryData(d, p) => match d {
-                Some(d) => &d.position,
-                None => p,
-            },
-            PassageContent::Script(p) => p.get_position(),
-            PassageContent::Stylesheet(p) => p.get_position(),
-        }
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        match self {
-            PassageContent::Normal(p) => p.mut_position(),
-            PassageContent::StoryTitle(t) => t.mut_position(),
-            PassageContent::StoryData(_, p) => p,
-            PassageContent::Script(p) => p.mut_position(),
-            PassageContent::Stylesheet(p) => p.mut_position(),
-        }
-    }
 }
 
 impl std::convert::From<TwineContent> for PassageContent {

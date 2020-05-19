@@ -2,7 +2,6 @@ use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
 use crate::Position;
-use crate::Positional;
 
 /// The content of a [`Passage`] tagged with `script`, containing script data.
 ///
@@ -31,16 +30,6 @@ impl ScriptContent {
             content: context.get_contents().to_string(),
             position: Position::default(),
         }))
-    }
-}
-
-impl Positional for ScriptContent {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
     }
 }
 

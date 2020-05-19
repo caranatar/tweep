@@ -4,7 +4,6 @@ use crate::Contextual;
 use crate::FullContext;
 use crate::Output;
 use crate::Position;
-use crate::Positional;
 use crate::ContextPosition;
 
 use std::ops::Range;
@@ -122,7 +121,6 @@ impl PassageHeader {
                         err.with_context_len(1)
                     }
                 }
-                .with_column(1),
             );
         }
 
@@ -160,7 +158,7 @@ impl PassageHeader {
                     metadata.insert(k.to_string(), v.clone());
                 }
             } else {
-                warnings.push(res.err().unwrap().with_offset_column(pos));
+                warnings.push(res.err().unwrap());
             }
         }
 
@@ -300,16 +298,6 @@ fn parse_metadata(context: FullContext) -> Result<serde_json::Map<String, serde_
     }
 }
 
-impl Positional for PassageHeader {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Finds the last unescaped string `s` in the input string `input`
 fn find_last_unescaped(input: &str, s: &str) -> Option<usize> {
     // Check for last 's'
@@ -406,7 +394,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MissingSigil, expected).with_column(1);
+            let error = Error::new(ErrorType::MissingSigil, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -426,7 +414,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::LeadingWhitespace, expected).with_column(1);
+            let error = Error::new(ErrorType::LeadingWhitespace, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -446,7 +434,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName, expected).with_column(3);
+            let error = Error::new(ErrorType::EmptyName, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -463,7 +451,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName, expected).with_column(3);
+            let error = Error::new(ErrorType::EmptyName, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -486,7 +474,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MetadataBeforeTags, expected).with_column(22);
+            let error = Error::new(ErrorType::MetadataBeforeTags, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error
@@ -518,7 +506,7 @@ mod tests {
             let errors = res.err().unwrap().errors;
             assert!(errors.iter().any(|a| {
                 let sub = sub.subcontext(ContextPosition::new(1, 4)..=ContextPosition::new(1, 4));
-                let expected = Error::new(e.clone(), sub).with_column(4);
+                let expected = Error::new(e.clone(), sub);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -540,7 +528,7 @@ mod tests {
             assert_eq!(res.is_err(), true);
             assert!(res.err().unwrap().errors.iter().any(|a| {
                 let sub = sub.subcontext(ContextPosition::new(1,4)..=ContextPosition::new(1,4));
-                let expected = Error::new(e.clone(), sub).with_column(4);
+                let expected = Error::new(e.clone(), sub);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -561,7 +549,7 @@ mod tests {
             assert_eq!(res.is_err(), true);            
             assert!(res.err().unwrap().errors.iter().any(|a| {
                 let sub = sub.subcontext(ContextPosition::new(1,6)..=ContextPosition::new(1,6));
-                let expected = Error::new(e.clone(), sub).with_column(6);
+                let expected = Error::new(e.clone(), sub);
                 #[cfg(not(feature = "issue-context"))]
                 {
                     *a == expected
@@ -582,7 +570,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::UnclosedTagBlock, expected).with_column(22);
+            let error = Error::new(ErrorType::UnclosedTagBlock, expected);
             #[cfg(not(feature = "issue-context"))]
             {
                 error

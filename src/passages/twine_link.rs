@@ -1,5 +1,4 @@
 use crate::Position;
-use crate::Positional;
 use crate::FullContext;
 
 /// A link to a twee passage contained within a twee passage
@@ -39,15 +38,5 @@ impl TwineLink {
             position: Position::default(),
             context,
         }
-    }
-}
-
-impl Positional for TwineLink {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
     }
 }

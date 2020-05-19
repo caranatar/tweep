@@ -1,19 +1,18 @@
 #[cfg(feature = "issue-context")]
+use crate::CodeMap;
+#[cfg(feature = "issue-context")]
 use crate::ContextErrorList;
 use crate::ContextPosition;
 use crate::Error;
 use crate::ErrorList;
-#[cfg(feature = "issue-context")]
-use bimap::BiMap;
-#[cfg(feature = "issue-context")]
-use crate::CodeMap;
 use crate::FullContext;
 use crate::Output;
 use crate::Passage;
 use crate::PassageContent;
-use crate::Positional;
 use crate::Warning;
 use crate::WarningType;
+#[cfg(feature = "issue-context")]
+use bimap::BiMap;
 use std::collections::HashMap;
 use std::default::Default;
 use std::fs::File;
@@ -198,7 +197,7 @@ impl StoryPassages {
 
             // Create the object from the contents, add file name to Positions
             let context = FullContext::from(Some(file_name.clone()), contents);
-            StoryPassages::from_context(context).with_file(file_name)
+            StoryPassages::from_context(context)
         } else if path.is_dir() {
             let dir = std::fs::read_dir(path);
             if dir.is_err() {
@@ -273,7 +272,6 @@ impl StoryPassages {
                     WarningType::DuplicateStoryTitle,
                     other_title.context.clone(),
                 );
-                *warning.mut_position() = other_title.header.get_position().clone();
                 warning.set_referent(self_title.context.clone());
                 warnings.push(warning)
             }
@@ -287,7 +285,6 @@ impl StoryPassages {
                     WarningType::DuplicateStoryData,
                     other_data.context.clone(),
                 );
-                *warning.mut_position() = other_data.header.get_position().clone();
                 warning.set_referent(self_data.context.clone());
                 warnings.push(warning);
             }
@@ -457,9 +454,7 @@ impl StoryPassages {
             let next_line = subcontext_end.line + 1;
             let subcontext = context.subcontext(subcontext_start..=subcontext_end);
             // Parse the passage
-            let (mut res, mut passage_warnings) = Passage::parse(subcontext)
-                .with_offset_row(start.line - 1)
-                .take();
+            let (mut res, mut passage_warnings) = Passage::parse(subcontext).take();
             warnings.append(&mut passage_warnings);
 
             // Update the start position
@@ -540,30 +535,6 @@ impl StoryPassages {
     }
 }
 
-impl Positional for StoryPassages {
-    fn set_file(&mut self, file: String) {
-        if self.title.is_some() {
-            self.title.as_mut().unwrap().set_file(file.clone());
-        }
-
-        if self.data.is_some() {
-            self.data.as_mut().unwrap().set_file(file.clone());
-        }
-
-        for passage in self.passages.values_mut() {
-            passage.set_file(file.clone());
-        }
-
-        for script in &mut self.scripts {
-            script.set_file(file.clone());
-        }
-
-        for style in &mut self.stylesheets {
-            style.set_file(file.clone());
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -600,9 +571,7 @@ Test Story
             let warning = Warning::new(
                 WarningType::EscapedOpenSquare,
                 context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
-            )
-            .with_row(7)
-            .with_column(5);
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -655,10 +624,7 @@ Test Story
                 let warning = Warning::new(
                     WarningType::EscapedOpenSquare,
                     context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
-                )
-                .with_row(7)
-                .with_column(5)
-                .with_file("test.twee".to_string());
+                );
                 #[cfg(not(feature = "issue-context"))]
                 {
                     warning
@@ -737,10 +703,7 @@ blah blah
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
                 context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
-            )
-            .with_column(6)
-            .with_row(10)
-            .with_file("test.twee".to_string());
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -757,10 +720,7 @@ blah blah
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
                 context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
-            )
-            .with_column(16)
-            .with_row(9)
-            .with_file("test2.tw".to_string());
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -833,10 +793,7 @@ blah blah
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
                 context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
-            )
-            .with_column(6)
-            .with_row(10)
-            .with_file("test.twee".to_string());
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -853,10 +810,7 @@ blah blah
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
                 context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
-            )
-            .with_column(16)
-            .with_row(9)
-            .with_file("test2.tw".to_string());
+            );
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -961,10 +915,11 @@ Link to [[A passage]]
         assert_eq!(warnings.len(), 1);
         assert_eq!(
             warnings[0],
-            Warning::new(WarningType::DuplicateStoryData, context.subcontext(ContextPosition::new(15, 1)..))
-                .with_column(1)
-                .with_row(15)
-                .with_referent(story.data.as_ref().unwrap().context.subcontext(..))
+            Warning::new(
+                WarningType::DuplicateStoryData,
+                context.subcontext(ContextPosition::new(15, 1)..)
+            )
+            .with_referent(story.data.as_ref().unwrap().context.clone())
         );
 
         assert_eq!(
@@ -1015,8 +970,6 @@ Discarded Duplicate Title
                 WarningType::DuplicateStoryTitle,
                 context.subcontext(ContextPosition::new(15, 1)..)
             )
-            .with_column(1)
-            .with_row(15)
             .with_referent(story.title.as_ref().unwrap().context.clone())
         );
         assert_eq!(story.title.is_some(), true);
@@ -1089,9 +1042,7 @@ Test Story
         let mut expected = vec![Warning::new(
             WarningType::DeadLink("Dead link".to_string()),
             FullContext::from(None, "TODO: add context for passages".to_string()),
-        )
-        .with_row(5)
-        .with_column(23)];
+        )];
         #[cfg(feature = "issue-context")]
         {
             expected[0].context_len = Some(13);
@@ -1127,7 +1078,7 @@ Test Story
         assert_eq!(story.get_start_passage_name(), Some("Alt Start"));
     }
 
-        #[test]
+    #[test]
     fn empty_passage() {
         let input = r#":: Snoopy [dog peanuts]
 Snoopy is a dog in the comic Peanuts.
@@ -1148,7 +1099,8 @@ body {font-size: 1.5em;}
     "format": "Harlowe",
     "formatVersion": "2.1.0",
     "zoom": 100
-}"#.to_string();
+}"#
+        .to_string();
         let context = FullContext::from(None, input);
         let out = StoryPassages::parse(context);
         assert_eq!(out.has_warnings(), false);
@@ -1183,9 +1135,8 @@ Test Story
             warnings,
             vec![Warning::new(
                 WarningType::DeadStartPassage("Alternate Start".to_string()),
-                context.subcontext(ContextPosition::new(10, 1)..))
-            .with_row(10)
-            .with_column(1)]
+                context.subcontext(ContextPosition::new(10, 1)..)
+            )]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));
     }

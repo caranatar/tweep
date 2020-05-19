@@ -1,9 +1,8 @@
 #[cfg(feature = "issue-context")]
 use crate::Contextual;
-use crate::Position;
-use crate::Positional;
-use crate::WarningType;
 use crate::FullContext;
+use crate::Position;
+use crate::WarningType;
 
 /// A warning with a [`WarningType`], [`Position`], and optionally a reference
 /// to another [`Position`]
@@ -136,24 +135,10 @@ impl Contextual for Warning {
     }
 }
 
-impl Positional for Warning {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
-    }
-
-    fn set_file(&mut self, file: String) {
-        self.mut_position().set_file(file.clone());
-    }
-}
-
 impl std::fmt::Display for Warning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cause = if self.has_referent() {
-            let p:crate::PartialContext = self.get_referent().unwrap().subcontext(..).into();
+            let p: crate::PartialContext = self.get_referent().unwrap().clone().into();
             format!(", caused by: {}", p)
         } else {
             String::new()
@@ -172,13 +157,11 @@ mod tests {
         let mut warning = Warning::new(WarningType::UnclosedLink, context);
         assert!(!warning.has_referent());
         assert!(warning.get_referent().is_none());
-        assert_eq!(warning.get_position(), &Position::StoryLevel);
 
         let ref_context = FullContext::from(None, "foo bar".to_string());
         warning.set_referent(ref_context.clone());
         assert!(warning.has_referent());
         assert_eq!(warning.get_referent(), Some(&ref_context));
-        assert_eq!(warning.get_position(), &Position::StoryLevel);
     }
 
     #[test]
@@ -188,10 +171,7 @@ mod tests {
         let warning = Warning::new(WarningType::UnclosedLink, context)
             .with_referent(ref_context.clone());
         // Prove changing the Warning's Position doesn't change the referent
-        warning.set_column(10);
-        warning.set_row(20);
         assert_eq!(warning.get_referent(), Some(&ref_context));
-        assert_eq!(warning.get_position(), &Position::RowColumn(20, 10));
     }
 
     #[test]

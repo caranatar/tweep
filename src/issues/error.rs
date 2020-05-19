@@ -1,6 +1,5 @@
 use crate::ErrorType;
 use crate::Position;
-use crate::Positional;
 #[cfg(feature = "issue-context")]
 use crate::Contextual;
 use crate::FullContext;
@@ -72,16 +71,6 @@ impl Contextual for Error {
 
     fn mut_context_len(&mut self) -> &mut Option<usize> {
         &mut self.context_len
-    }
-}
-
-impl Positional for Error {
-    fn get_position(&self) -> &Position {
-        &self.position
-    }
-
-    fn mut_position(&mut self) -> &mut Position {
-        &mut self.position
     }
 }
 
