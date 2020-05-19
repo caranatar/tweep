@@ -1,9 +1,13 @@
+use crate::FullContext;
+
 /// Internal structure representing a Twine link, with a target Passage name and
 /// column/row offset within the Twine passage
 #[derive(Debug)]
 pub(crate) struct InternalTwineLink {
     /// The name of the target Passage
     pub(crate) target: String,
+
+    pub(crate) context: FullContext,
 
     /// The column at which the link occurs within the row
     pub(crate) col_offset: usize,

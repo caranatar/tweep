@@ -23,12 +23,18 @@ impl PartialContext {
     }
 }
 
-impl std::convert::From<FullContext<'_>> for PartialContext {
-    fn from(full: FullContext<'_>) -> PartialContext {
+impl std::convert::From<FullContext> for PartialContext {
+    fn from(full: FullContext) -> PartialContext {
         PartialContext {
             file_name: full.get_file_name().clone(),
             start_position: full.get_start_position().clone(),
         }
+    }
+}
+
+impl std::fmt::Display for PartialContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}: {}", self.file_name, self.start_position)
     }
 }
 

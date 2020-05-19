@@ -280,15 +280,19 @@ mod tests {
     #[test]
     fn basic_with_warnings() {
         use crate::WarningType;
-        let warnings = vec![ Warning::new(WarningType::DuplicateStoryData),
-                             Warning::new(WarningType::DuplicateStoryTitle) ];
-        let out:Output<u8> = Output::new(5).with_warnings(warnings.clone());
+        use crate::FullContext;
+        let context = FullContext::from(None, "".to_string());
+        let warnings = vec![ Warning::new(WarningType::DuplicateStoryData, context.subcontext(..)),
+                             Warning::new(WarningType::DuplicateStoryTitle, context.subcontext(..)) ];
+        let expected = vec![ Warning::new(WarningType::DuplicateStoryData, context.subcontext(..)),
+                             Warning::new(WarningType::DuplicateStoryTitle, context.subcontext(..)) ];
+        let out:Output<u8> = Output::new(5).with_warnings(warnings);
         assert!(out.has_warnings());
         assert_eq!(out.get_output(), &5);
-        assert_eq!(out.get_warnings(), &warnings);
+        assert_eq!(out.get_warnings(), &expected);
         let (x,w) = out.take();
         assert_eq!(x, 5);
-        assert_eq!(w, warnings);
+        assert_eq!(w, expected);
     }
 
     #[test]
@@ -368,12 +372,16 @@ mod tests {
     #[test]
     fn positional() {
         use crate::WarningType;
-        let warnings = vec![ Warning::new(WarningType::DuplicateStoryData),
-                             Warning::new(WarningType::DuplicateStoryTitle) ];
-        let mut out:Output<PositionalU8> = Output::new(PositionalU8::new(5)).with_warnings(warnings.clone());
+        use crate::FullContext;
+        let context = FullContext::from(None, "".to_string());
+        let warnings = vec![ Warning::new(WarningType::DuplicateStoryData, context.subcontext(..)),
+                             Warning::new(WarningType::DuplicateStoryTitle, context.subcontext(..)) ];
+        let expected = vec![ Warning::new(WarningType::DuplicateStoryData, context.subcontext(..)),
+                             Warning::new(WarningType::DuplicateStoryTitle, context.subcontext(..)) ];
+        let mut out:Output<PositionalU8> = Output::new(PositionalU8::new(5)).with_warnings(warnings);
         assert!(out.has_warnings());
         assert_eq!(out.get_output().number, 5);
-        assert_eq!(out.get_warnings(), &warnings);
+        assert_eq!(out.get_warnings(), &expected);
 
         let mut expected_position = Position::default();
         assert_eq!(out.get_output().get_position(), &expected_position);

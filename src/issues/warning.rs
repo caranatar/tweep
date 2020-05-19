@@ -3,6 +3,7 @@ use crate::Contextual;
 use crate::Position;
 use crate::Positional;
 use crate::WarningType;
+use crate::FullContext;
 
 /// A warning with a [`WarningType`], [`Position`], and optionally a reference
 /// to another [`Position`]
@@ -17,16 +18,18 @@ use crate::WarningType;
 ///
 /// [`WarningType`]: enum.WarningType.html
 /// [`Position`]: enum.Position.html
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Warning {
     /// The warning type
     pub warning_type: WarningType,
+
+    pub context: Option<FullContext>,
 
     /// The location of the warning
     pub position: Position,
 
     /// The location referenced by this warning
-    pub referent: Option<Position>,
+    pub referent: Option<FullContext>,
 
     /// Line of context for Warning
     #[cfg(feature = "issue-context")]
@@ -43,9 +46,10 @@ impl Warning {
     /// # assert!(!warning.has_referent());
     /// # assert_eq!(warning.position, tweep::Position::StoryLevel);
     /// ```
-    pub fn new(warning_type: WarningType) -> Self {
+    pub fn new<T: Into<Option<FullContext>>>(warning_type: WarningType, context: T) -> Self {
         Warning {
             warning_type,
+            context: context.into(),
             position: Position::StoryLevel,
             referent: None,
             #[cfg(feature = "issue-context")]
@@ -76,7 +80,7 @@ impl Warning {
     ///     .with_referent(Position::RowColumn(5, 0));
     /// assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5, 0)));
     /// ```
-    pub fn get_referent(&self) -> Option<&Position> {
+    pub fn get_referent(&self) -> Option<&FullContext> {
         self.referent.as_ref()
     }
 
@@ -91,7 +95,7 @@ impl Warning {
     /// assert!(warning.has_referent());
     /// assert_eq!(warning.get_referent(), Some(&Position::RowColumn(23, 5)));
     /// ```
-    pub fn set_referent(&mut self, referent: Position) {
+    pub fn set_referent(&mut self, referent: FullContext) {
         self.referent = Some(referent);
     }
 
@@ -105,7 +109,7 @@ impl Warning {
     ///     .with_referent(Position::RowColumn(5, 0));
     /// # assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5, 0)));
     /// ```
-    pub fn with_referent(mut self, referent: Position) -> Self {
+    pub fn with_referent(mut self, referent: FullContext) -> Self {
         self.set_referent(referent);
         self
     }
@@ -143,21 +147,14 @@ impl Positional for Warning {
 
     fn set_file(&mut self, file: String) {
         self.mut_position().set_file(file.clone());
-
-        self.referent.as_mut().and_then(|referent| {
-            match referent {
-                Position::File(_, _, _) => (),
-                _ => referent.set_file(file),
-            };
-            Some(())
-        });
     }
 }
 
 impl std::fmt::Display for Warning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cause = if self.has_referent() {
-            format!(", caused by: {}", self.get_referent().unwrap())
+            let p:crate::PartialContext = self.get_referent().unwrap().subcontext(..).into();
+            format!(", caused by: {}", p)
         } else {
             String::new()
         };
@@ -171,32 +168,37 @@ mod tests {
 
     #[test]
     fn incremental() {
-        let mut warning = Warning::new(WarningType::UnclosedLink);
+        let context = FullContext::from(None, "[[".to_string());
+        let mut warning = Warning::new(WarningType::UnclosedLink, context);
         assert!(!warning.has_referent());
         assert!(warning.get_referent().is_none());
         assert_eq!(warning.get_position(), &Position::StoryLevel);
 
-        warning.set_referent(Position::RowColumn(5, 23));
+        let ref_context = FullContext::from(None, "foo bar".to_string());
+        warning.set_referent(ref_context.subcontext(..));
         assert!(warning.has_referent());
-        assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5, 23)));
+        assert_eq!(warning.get_referent(), Some(&ref_context));
         assert_eq!(warning.get_position(), &Position::StoryLevel);
     }
 
     #[test]
     fn unchanged_referent() {
+        let context = FullContext::from(None, "[[".to_string());
+        let ref_context = FullContext::from(None, "foo bar".to_string());
         let mut warning =
-            Warning::new(WarningType::UnclosedLink).with_referent(Position::RowColumn(23, 5));
+            Warning::new(WarningType::UnclosedLink, context).with_referent(ref_context.subcontext(..));
         // Prove changing the Warning's Position doesn't change the referent
         warning.set_column(10);
         warning.set_row(20);
-        assert_eq!(warning.get_referent(), Some(&Position::RowColumn(23, 5)));
+        assert_eq!(warning.get_referent(), Some(&ref_context));
         assert_eq!(warning.get_position(), &Position::RowColumn(20, 10));
     }
 
     #[test]
     #[cfg(feature = "warning-names")]
     fn test_name() {
-        let warning = Warning::new(WarningType::UnclosedLink);
+        let context = FullContext::from(None, "[[".to_string());
+        let warning = Warning::new(WarningType::UnclosedLink, context);
         assert_eq!(warning.get_name(), "UnclosedLink");
     }
 }

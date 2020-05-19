@@ -106,7 +106,6 @@
 mod context;
 pub use context::ContextPosition;
 pub use context::FullContext;
-pub use context::InnerContext;
 pub use context::PartialContext;
 
 mod issues;
@@ -142,9 +141,5 @@ mod stories;
 pub use stories::CodeMap;
 #[cfg(feature = "issue-context")]
 pub use stories::ContextErrorList;
-#[cfg(feature = "issue-context")]
-pub use stories::FileMap;
-#[cfg(feature = "issue-context")]
-pub use stories::StoryMap;
 pub use stories::Story;
 pub use stories::StoryPassages;

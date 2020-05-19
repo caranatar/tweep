@@ -5,12 +5,12 @@ use crate::Positional;
 ///
 /// [`Error`]: struct.Error.html
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct ErrorList<'a> {
+pub struct ErrorList {
     /// The list of `Error`s
-    pub errors: Vec<Error<'a>>,
+    pub errors: Vec<Error>,
 }
 
-impl<'a> ErrorList<'a> {
+impl ErrorList {
     /// Creates a new `ErrorList`
     ///
     /// # Examples
@@ -33,7 +33,7 @@ impl<'a> ErrorList<'a> {
     /// errors.push(Error::new(ErrorType::EmptyName, context.subcontext(..)));
     /// # assert_eq!(errors.errors, vec![ Error::new(ErrorType::EmptyName, context.subcontext(..)) ]);
     /// ```
-    pub fn push(&mut self, error: Error<'a>) {
+    pub fn push(&mut self, error: Error) {
         self.errors.push(error);
     }
 
@@ -96,9 +96,9 @@ impl<'a> ErrorList<'a> {
     /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName, left_context.subcontext(..)), Error::new(ErrorType::LeadingWhitespace, right_context.subcontext(..)) ]);
     /// ```
     pub fn merge<T, U>(
-        left: &mut Result<T, ErrorList<'a>>,
-        right: &mut Result<U, ErrorList<'a>>,
-    ) -> Result<(), ErrorList<'a>> {
+        left: &mut Result<T, ErrorList>,
+        right: &mut Result<U, ErrorList>,
+    ) -> Result<(), ErrorList> {
         let mut errors = Vec::new();
         if left.is_err() {
             errors.append(&mut left.as_mut().err().unwrap().errors);
@@ -116,7 +116,7 @@ impl<'a> ErrorList<'a> {
     }
 }
 
-impl Positional for ErrorList<'_> {
+impl Positional for ErrorList {
     fn set_row(&mut self, row: usize) {
         for error in &mut self.errors {
             error.set_row(row);
@@ -148,13 +148,13 @@ impl Positional for ErrorList<'_> {
     }
 }
 
-impl std::error::Error for ErrorList<'_> {
+impl std::error::Error for ErrorList {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }
 
-impl std::fmt::Display for ErrorList<'_> {
+impl std::fmt::Display for ErrorList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut res = Ok(());
         for error in &self.errors {
@@ -167,7 +167,7 @@ impl std::fmt::Display for ErrorList<'_> {
     }
 }
 
-impl<'a> std::convert::From<Error<'a>> for ErrorList<'a> {
+impl  std::convert::From<Error> for ErrorList {
     fn from(e: Error) -> ErrorList {
         let mut error_list = ErrorList::default();
         error_list.push(e);
@@ -229,12 +229,12 @@ mod tests {
         let mut ok_left = Ok(());
         let mut ok_right = Ok(());
 
-        fn error_list_left() -> ErrorList<'static> {
+        fn error_list_left() -> ErrorList {
             ErrorList {
                 errors: vec![Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string()))],
             }
         };
-        fn error_list_right() -> ErrorList<'static> {
+        fn error_list_right() -> ErrorList {
             ErrorList {
                 errors: vec![Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))],
             }

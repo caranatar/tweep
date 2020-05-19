@@ -71,6 +71,12 @@ impl ContextPosition {
     }
 }
 
+impl std::fmt::Display for ContextPosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "line: {} column: {}", self.line, self.column)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::ContextPosition;

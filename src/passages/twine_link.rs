@@ -1,11 +1,14 @@
 use crate::Position;
 use crate::Positional;
+use crate::FullContext;
 
 /// A link to a twee passage contained within a twee passage
 #[derive(Debug, Eq, PartialEq)]
 pub struct TwineLink {
     /// The name of the passage this link points to
     pub target: String,
+
+    pub context: FullContext,
 
     /// The position of the link
     pub position: Position,
@@ -20,19 +23,21 @@ impl TwineLink {
     ///
     /// [`Position`]: enum.Position.html
     #[cfg(not(feature = "issue-context"))]
-    pub fn new(target: String) -> Self {
+    pub fn new(target: String, context: FullContext) -> Self {
         TwineLink {
             target,
             position: Position::default(),
+            context,
         }
     }
 
     #[cfg(feature = "issue-context")]
-    pub fn new(target: String, context_len: usize) -> Self {
+    pub fn new(target: String, context:FullContext, context_len: usize) -> Self {
         TwineLink {
             target,
             context_len,
             position: Position::default(),
+            context,
         }
     }
 }

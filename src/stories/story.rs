@@ -8,7 +8,7 @@ use crate::StoryPassages;
 use std::collections::HashMap;
 use std::path::Path;
 #[cfg(feature = "issue-context")]
-use crate::StoryMap;
+use crate::CodeMap;
 #[cfg(feature = "issue-context")]
 use crate::ContextErrorList;
 
@@ -126,11 +126,11 @@ pub struct Story {
 
     /// StoryMap for this story
     #[cfg(feature = "issue-context")]
-    pub story_map: StoryMap,
+    pub code_map: CodeMap,
 }
 
 #[cfg(not(feature = "issue-context"))]
-type ParseOutput<'a> = Output<Result<Story, ErrorList<'a>>>;
+type ParseOutput = Output<Result<Story, ErrorList>>;
 #[cfg(feature = "issue-context")]
 type ParseOutput = Output<Result<Story, ContextErrorList>>;
 
@@ -139,7 +139,7 @@ impl Story {
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string<'a>(input: String) -> ParseOutput<'a> {
+    pub fn from_string(input: String) -> ParseOutput {
         StoryPassages::from_string(input).into_result()
     }
 
@@ -151,7 +151,7 @@ impl Story {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
+    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
         StoryPassages::from_path(input).into_result()
     }
 
@@ -220,7 +220,7 @@ impl std::convert::From<StoryPassages> for Story {
         let passages = s.passages;
 
         #[cfg(feature = "issue-context")]
-        let story_map = s.story_map;
+        let code_map = s.code_map;
 
         Story {
             title,
@@ -229,7 +229,7 @@ impl std::convert::From<StoryPassages> for Story {
             scripts,
             stylesheets,
             #[cfg(feature = "issue-context")]
-            story_map,
+            code_map,
         }
     }
 }
@@ -262,12 +262,15 @@ Test Story
 "#
         .to_string();
         use crate::Positional;
-        let out = Story::from_string(input);
+        use crate::FullContext;
+        use crate::ContextPosition;
+        let out = Story::from_string(input.clone());
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
+        let context = FullContext::from(None, input);
         assert_eq!(warnings[0], {
-            let warning = Warning::new(WarningType::EscapedOpenSquare)
+            let warning = Warning::new(WarningType::EscapedOpenSquare, context.subcontext(ContextPosition::new(7,5)..=ContextPosition::new(7, 6)))
                 .with_row(7)
                 .with_column(5);
             #[cfg(not(feature = "issue-context"))]
@@ -317,7 +320,7 @@ Test Story
         assert_eq!(story.title.is_some(), true);
         let title = story.title.unwrap();
         assert_eq!(title, "Test Story");
-        assert_eq!(warnings[0], Warning::new(WarningType::MissingStoryData));
+        assert_eq!(warnings[0], Warning::new(WarningType::MissingStoryData, None));
 
         Ok(())
     }
@@ -387,10 +390,10 @@ blah blah
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
-        writeln!(file_one, "{}", input_one)?;
+        write!(file_one, "{}", input_one.clone())?;
         let file_path_two = dir.path().join("test2.tw");
         let mut file_two = File::create(file_path_two.clone())?;
-        writeln!(file_two, "{}", input_two)?;
+        write!(file_two, "{}", input_two.clone())?;
 
         let out = Story::from_path(dir.path());
         assert_eq!(out.has_warnings(), true);
@@ -402,8 +405,11 @@ blah blah
         assert_eq!(story.get_start_passage_name(), Some("Start"));
 
         use crate::Positional;
+        use crate::FullContext;
+        use crate::ContextPosition;
+        let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedOpenCurly)
+            let warning = Warning::new(WarningType::EscapedOpenCurly, context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)))
                 .with_column(6)
                 .with_row(10)
                 .with_file("test.twee".to_string());
@@ -418,8 +424,9 @@ blah blah
             }
         }));
 
+        let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedCloseSquare)
+            let warning = Warning::new(WarningType::EscapedCloseSquare, context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)))
                 .with_column(16)
                 .with_row(9)
                 .with_file("test2.tw".to_string());

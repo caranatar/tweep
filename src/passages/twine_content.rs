@@ -1,3 +1,4 @@
+use crate::ContextPosition;
 #[cfg(feature = "issue-context")]
 use crate::Contextual;
 use crate::ErrorList;
@@ -74,6 +75,7 @@ impl TwineContent {
                 TwineLink {
                     target: link.target.clone(),
                     position: self.position.clone(),
+                    context: link.context.subcontext(..),
                     #[cfg(feature = "issue-context")]
                     context_len: link.context_len,
                 }
@@ -88,6 +90,7 @@ impl TwineContent {
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         let mut linked_passages = Vec::new();
         let mut warnings = Vec::new();
+        println!("The context about to crash {:?}", context);
         for (row, line) in context.get_contents().split('\n').enumerate() {
             let mut start = 0;
             loop {
@@ -99,7 +102,7 @@ impl TwineContent {
                     Some(x) => start + x,
                     None => {
                         warnings.push({
-                            let warning = Warning::new(WarningType::UnclosedLink)
+                            let warning = Warning::new(WarningType::UnclosedLink, context.subcontext(ContextPosition::new(row+1, start+1)..=ContextPosition::new(row+1, line.len())))
                                 .with_column(start + 1)
                                 .with_row(row + 1);
                             #[cfg(not(feature = "issue-context"))]
@@ -115,7 +118,6 @@ impl TwineContent {
                     }
                 };
                 let link_content = &line[start + 2..end];
-                #[cfg(feature = "issue-context")]
                 let context_len = link_content.len() + 4;
                 let linked_passage = if link_content.contains('|') {
                     // Link format: [[Link Text|Passage Name]]
@@ -139,7 +141,7 @@ impl TwineContent {
                     || linked_passage.ends_with(char::is_whitespace)
                 {
                     warnings.push({
-                        let warning = Warning::new(WarningType::WhitespaceInLink)
+                        let warning = Warning::new(WarningType::WhitespaceInLink, context.subcontext(ContextPosition::new(row+1, start+1)..=ContextPosition::new(row+1, start+context_len)))
                             .with_column(start + 1)
                             .with_row(row + 1);
                         #[cfg(not(feature = "issue-context"))]
@@ -155,6 +157,7 @@ impl TwineContent {
 
                 linked_passages.push(InternalTwineLink {
                     target: linked_passage.to_string(),
+                    context: context.subcontext(ContextPosition::new(row + 1, start + 1)..=ContextPosition::new(row + 1, start + context_len)),
                     col_offset: start,
                     row_offset: row,
                     #[cfg(feature = "issue-context")]
@@ -205,18 +208,19 @@ mod tests {
     fn links() {
         let input =
             "[[foo]]\n[[Pipe link|bar]]\n[[baz<-Left link]]\n[[Right link->qux]]\n".to_string();
-        let out = TwineContent::parse(FullContext::from(None, input));
+        let context = FullContext::from(None, input);
+        let out = TwineContent::parse(context.subcontext(..));
         let (res, warnings) = out.take();
         assert_eq!(warnings.is_empty(), true);
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
         let expected_targets = vec!["foo", "bar", "baz", "qux"];
-        #[cfg(feature = "issue-context")]
         let expected_lens = vec![7, 17, 18, 19];
         let expected_links: Vec<TwineLink> = (1 as usize..5)
             .map(|row| {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
+                    context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row-1])),
                     #[cfg(feature = "issue-context")]
                     expected_lens[row - 1],
                 )
@@ -229,10 +233,10 @@ mod tests {
 
     #[test]
     fn unclosed_link() {
-        let input = "blah [[unclosed\nlink]] blah blah\n\n".to_string();
-        let out = TwineContent::parse(FullContext::from(None, input));
+        let context = FullContext::from(None, "blah [[unclosed\nlink]] blah blah\n\n".to_string());
+        let out = TwineContent::parse(context.subcontext(..));
         let (res, warnings) = out.take();
-        let mut expected = Warning::new(WarningType::UnclosedLink);
+        let mut expected = Warning::new(WarningType::UnclosedLink, context.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(1, 15)));
         #[cfg(not(feature = "issue-context"))]
         {
             expected = expected.with_row(1).with_column(6);
@@ -258,14 +262,14 @@ mod tests {
 [[ quuz<-text]]
 [[text-> corge]]
 [[text->grault ]]"#
-            .to_string();
-        let out = TwineContent::parse(FullContext::from(None, input));
+        .to_string();
+        let context = FullContext::from(None, input);
+        let out = TwineContent::parse(context.subcontext(..));
         let (res, warnings) = out.take();
-        #[cfg(feature = "issue-context")]
         let expected_lens = vec![8, 8, 13, 13, 15, 15, 16, 17];
         let expected_warnings: Vec<Warning> = (1 as usize..9)
             .map(|row| {
-                let warning = Warning::new(WarningType::WhitespaceInLink)
+                let warning = Warning::new(WarningType::WhitespaceInLink, context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row - 1])))
                     .with_row(row)
                     .with_column(1);
                 #[cfg(not(feature = "issue-context"))]
@@ -288,6 +292,7 @@ mod tests {
             .map(|row| {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
+                    context.subcontext(ContextPosition::new(row, 1)..=ContextPosition::new(row, expected_lens[row - 1])),
                     #[cfg(feature = "issue-context")]
                     expected_lens[row - 1],
                 )

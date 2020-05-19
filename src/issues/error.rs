@@ -10,7 +10,7 @@ use crate::FullContext;
 /// [`ErrorType`]: enum.ErrorType.html
 /// [`Position`]: enum.Position.html
 #[derive(Debug, Eq, PartialEq)]
-pub struct Error<'a> {
+pub struct Error {
     /// The type of error
     pub error_type: ErrorType,
 
@@ -22,10 +22,10 @@ pub struct Error<'a> {
     pub context_len: Option<usize>,
 
     /// The context of the error
-    context: FullContext<'a>,
+    pub context: Option<FullContext>,
 }
 
-impl<'a> Error<'a> {
+impl Error {
     /// Creates a new `Error` with the given [`ErrorType`] and a default
     /// [`Position`]
     ///
@@ -41,13 +41,25 @@ impl<'a> Error<'a> {
     ///
     /// [`ErrorType`]: enum.ErrorType.html
     /// [`Position`]: enum.Position.html
-    pub fn new(error_type: ErrorType, context: FullContext<'a>) -> Self {
+    pub fn new<T: Into<Option<FullContext>>>(error_type: ErrorType, context: T) -> Self {
         Error {
             error_type,
             position: Position::StoryLevel,
             #[cfg(feature = "issue-context")]
             context_len: None,
-            context,
+            context: context.into(),
+        }
+    }
+}
+
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        Error {
+            error_type: self.error_type.clone(),
+            position: self.position.clone(),
+            #[cfg(feature = "issue-context")]
+            context_len: self.context_len.clone(),
+            context: self.context.as_ref().and_then(|ctx| Some(ctx.subcontext(..))),
         }
     }
 }
@@ -63,7 +75,7 @@ impl Contextual for Error {
     }
 }
 
-impl Positional for Error<'_> {
+impl Positional for Error {
     fn get_position(&self) -> &Position {
         &self.position
     }
@@ -73,13 +85,13 @@ impl Positional for Error<'_> {
     }
 }
 
-impl std::error::Error for Error<'_> {
+impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
 }
 
-impl std::fmt::Display for Error<'_> {
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} at {}", self.error_type, self.position)
     }

@@ -4,14 +4,14 @@ use crate::ContextPosition;
 use crate::Error;
 use crate::ErrorList;
 #[cfg(feature = "issue-context")]
-use crate::FileMap;
+use bimap::BiMap;
+#[cfg(feature = "issue-context")]
+use crate::CodeMap;
 use crate::FullContext;
 use crate::Output;
 use crate::Passage;
 use crate::PassageContent;
 use crate::Positional;
-#[cfg(feature = "issue-context")]
-use crate::StoryMap;
 use crate::Warning;
 use crate::WarningType;
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use std::io::Read;
 use std::path::Path;
 
 #[cfg(not(feature = "issue-context"))]
-type StoryPassagesParseOutput<'a> = Output<Result<StoryPassages, ErrorList<'a>>>;
+type StoryPassagesParseOutput = Output<Result<StoryPassages, ErrorList>>;
 #[cfg(feature = "issue-context")]
 type StoryPassagesParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
@@ -50,11 +50,11 @@ pub struct StoryPassages {
 
     /// StoryMap for this story
     #[cfg(feature = "issue-context")]
-    pub story_map: StoryMap,
+    pub code_map: CodeMap,
 }
 
 #[cfg(not(feature = "issue-context"))]
-type ParseOutput<'a> = Output<Result<StoryPassages, ErrorList<'a>>>;
+type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
 #[cfg(feature = "issue-context")]
 type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
@@ -73,23 +73,27 @@ impl StoryPassages {
 
     #[cfg(feature = "issue-context")]
     fn renumber_file_ids(&mut self, start: usize) {
-        if let StoryMap::Map(map) = &mut self.story_map {
-            for file in map.map.values_mut() {
-                file.id += start;
-            }
+        let mut new_id_file_map = BiMap::new();
+        let mut new_contexts = HashMap::new();
+        for (id, context) in self.code_map.contexts.drain() {
+            let new_id = id + start;
+            new_id_file_map.insert(new_id, context.get_file_name().clone().unwrap());
+            new_contexts.insert(new_id, context);
         }
+        self.code_map.id_file_map = new_id_file_map;
+        self.code_map.contexts = new_contexts;
     }
 
     /// Parses an input `String` and returns the result or a list of errors,
     /// along with a list of any [`Warning`]s
     ///
     /// [`Warning`]: struct.Warning.html
-    pub fn from_string<'a>(input: String) -> ParseOutput<'a> {
+    pub fn from_string(input: String) -> ParseOutput {
         let context = FullContext::from(None, input);
         StoryPassages::from_context(context)
     }
 
-    pub(crate) fn from_context<'a>(context: FullContext<'a>) -> ParseOutput<'a> {
+    pub(crate) fn from_context(context: FullContext) -> ParseOutput {
         let mut out = StoryPassages::parse(context);
         if out.is_ok() {
             out.mut_output().as_mut().ok().unwrap().renumber_pids(1);
@@ -105,7 +109,7 @@ impl StoryPassages {
     ///
     /// [`Path`]: std::path::Path
     /// [`Warning`]: struct.Warning.html
-    pub fn from_path<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
+    pub fn from_path<P: AsRef<Path>>(input: P) -> ParseOutput {
         let out = StoryPassages::from_path_internal(input);
         let (mut res, mut warnings) = out.take();
         if res.is_ok() {
@@ -146,7 +150,7 @@ impl StoryPassages {
     /// contents into a `String` and uses `from_context` to parse it. If given a
     /// directory, finds the twee files, recurses with each file, then assembles
     /// the outputs into a single output
-    fn from_path_internal<'a, P: AsRef<Path>>(input: P) -> ParseOutput<'a> {
+    fn from_path_internal<P: AsRef<Path>>(input: P) -> ParseOutput {
         // Get the path
         let path: &Path = input.as_ref();
 
@@ -168,10 +172,10 @@ impl StoryPassages {
             if file.is_err() {
                 // Check for errors, return Error if we can't open file
                 let err_string = format!("{}", file.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
-                    path_string,
-                    err_string,
-                ), FullContext::from(None, file_name.clone()))
+                return Output::new(Err(Error::new(
+                    crate::ErrorType::BadInputPath(path_string, err_string),
+                    FullContext::from(None, file_name.clone()),
+                )
                 .into()));
             }
 
@@ -185,10 +189,10 @@ impl StoryPassages {
             if res.is_err() {
                 // Return an error if we can't read the file
                 let err_string = format!("{}", res.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
-                    path_string,
-                    err_string,
-                ), FullContext::from(None, file_name.clone()))
+                return Output::new(Err(Error::new(
+                    crate::ErrorType::BadInputPath(path_string, err_string),
+                    FullContext::from(None, file_name.clone()),
+                )
                 .into()));
             }
 
@@ -199,10 +203,10 @@ impl StoryPassages {
             let dir = std::fs::read_dir(path);
             if dir.is_err() {
                 let err_string = format!("{}", dir.err().unwrap());
-                return Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
-                    path_string,
-                    err_string,
-                ), FullContext::from(None, "TODO: DIR CONTEXT".to_string()))
+                return Output::new(Err(Error::new(
+                    crate::ErrorType::BadInputPath(path_string, err_string),
+                    None,
+                )
                 .into()));
             }
             let dir = dir.ok().unwrap();
@@ -234,10 +238,10 @@ impl StoryPassages {
             Output::new(Ok(story)).with_warnings(warnings)
         } else {
             let err_string = "Path is not a file or directory".to_string();
-            Output::new(Err(Error::new(crate::ErrorType::BadInputPath(
-                path_string,
-                err_string,
-            ), FullContext::from(None, "TODO: SOME CONTEXT???".to_string()))
+            Output::new(Err(Error::new(
+                crate::ErrorType::BadInputPath(path_string, err_string),
+                None,
+            )
             .into()))
         }
     }
@@ -255,21 +259,22 @@ impl StoryPassages {
 
         #[cfg(feature = "issue-context")]
         {
-            if let StoryMap::Map(self_map) = &mut self.story_map {
-                other.renumber_file_ids(self_map.map.len());
-
-                if let StoryMap::Map(other_map) = other.story_map {
-                    self_map.map.extend(other_map.map);
-                }
+            other.renumber_file_ids(self.code_map.contexts.len());
+            self.code_map.contexts.extend(other.code_map.contexts);
+            for (id, file_name) in other.code_map.id_file_map.iter() {
+                self.code_map.id_file_map.insert(*id, file_name.clone());
             }
         }
 
         match (&self.title, &other.title) {
             (None, Some(_)) => self.title = other.title,
-            (Some(_), Some(_)) => {
-                let mut warning = Warning::new(WarningType::DuplicateStoryTitle);
-                *warning.mut_position() = other.title.unwrap().header.get_position().clone();
-                warning.set_referent(self.title.as_ref().unwrap().header.get_position().clone());
+            (Some(self_title), Some(other_title)) => {
+                let mut warning = Warning::new(
+                    WarningType::DuplicateStoryTitle,
+                    other_title.context.subcontext(..),
+                );
+                *warning.mut_position() = other_title.header.get_position().clone();
+                warning.set_referent(self_title.context.subcontext(..));
                 warnings.push(warning)
             }
             _ => (),
@@ -277,10 +282,13 @@ impl StoryPassages {
 
         match (&self.data, &other.data) {
             (None, Some(_)) => self.data = other.data,
-            (Some(_), Some(_)) => {
-                let mut warning = Warning::new(WarningType::DuplicateStoryData);
-                *warning.mut_position() = other.data.unwrap().header.get_position().clone();
-                warning.set_referent(self.data.as_ref().unwrap().header.get_position().clone());
+            (Some(self_data), Some(other_data)) => {
+                let mut warning = Warning::new(
+                    WarningType::DuplicateStoryData,
+                    other_data.context.subcontext(..),
+                );
+                *warning.mut_position() = other_data.header.get_position().clone();
+                warning.set_referent(self_data.context.subcontext(..));
                 warnings.push(warning);
             }
             _ => (),
@@ -312,7 +320,7 @@ impl StoryPassages {
     pub fn check(&self) -> Vec<Warning> {
         let mut warnings = Vec::new();
         if self.title.is_none() {
-            warnings.push(Warning::new(WarningType::MissingStoryTitle));
+            warnings.push(Warning::new(WarningType::MissingStoryTitle, None));
         }
 
         let mut missing_start = !self.passages.contains_key("Start");
@@ -321,7 +329,7 @@ impl StoryPassages {
             .as_ref()
             .or_else(|| {
                 // There is no StoryData, generate a warning
-                warnings.push(Warning::new(WarningType::MissingStoryData));
+                warnings.push(Warning::new(WarningType::MissingStoryData, None));
 
                 // Return None to prevent additional processing
                 None
@@ -349,6 +357,7 @@ impl StoryPassages {
                                     referent: None,
                                     #[cfg(feature = "issue-context")]
                                     context_len: None, // TODO
+                                    context: Some(passage.context.subcontext(..)),
                                 });
                             }
 
@@ -361,7 +370,7 @@ impl StoryPassages {
             });
 
         if missing_start {
-            warnings.push(Warning::new(WarningType::MissingStartPassage));
+            warnings.push(Warning::new(WarningType::MissingStartPassage, None));
         }
 
         for passage in self.passages.values() {
@@ -376,6 +385,10 @@ impl StoryPassages {
                             referent: None,
                             #[cfg(feature = "issue-context")]
                             context_len: Some(link.context_len),
+                            context: Some(FullContext::from(
+                                None,
+                                "TODO: add context for passages".to_string(),
+                            )),
                         });
                     }
                 }
@@ -410,10 +423,7 @@ impl StoryPassages {
         let contents = context.get_contents();
 
         #[cfg(feature = "issue-context")]
-        let story_map = StoryMap::File(FileMap {
-            id: 0,
-            contents: contents.to_string(),
-        });
+        let mut code_map = CodeMap::default();
 
         // Story variables
         let mut title: Option<Passage> = None;
@@ -476,9 +486,10 @@ impl StoryPassages {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryTitle,
                             position: passage.header.position.clone(),
-                            referent: Some(existing.header.position.clone()),
+                            referent: Some(existing.context.subcontext(..)),
                             #[cfg(feature = "issue-context")]
                             context_len: None, // TODO
+                            context: Some(passage.context.subcontext(..)),
                         };
                         warnings.push(warning);
                     } else {
@@ -490,9 +501,10 @@ impl StoryPassages {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryData,
                             position: passage.header.position.clone(),
-                            referent: Some(existing.header.position.clone()),
+                            referent: Some(existing.context.subcontext(..)),
                             #[cfg(feature = "issue-context")]
                             context_len: None, // TODO
+                            context: Some(passage.context.subcontext(..)),
                         };
                         warnings.push(warning);
                     } else {
@@ -504,6 +516,7 @@ impl StoryPassages {
             }
         }
 
+        code_map.add(context);
         match errors {
             Ok(_) => {
                 let story = StoryPassages {
@@ -513,7 +526,7 @@ impl StoryPassages {
                     scripts,
                     stylesheets,
                     #[cfg(feature = "issue-context")]
-                    story_map,
+                    code_map,
                 };
                 Output::new(Ok(story))
             }
@@ -521,7 +534,7 @@ impl StoryPassages {
                 #[cfg(feature = "issue-context")]
                 let e = ContextErrorList {
                     error_list: e,
-                    story_map,
+                    code_map,
                 };
                 Output::new(Err(e))
             }
@@ -550,11 +563,6 @@ impl Positional for StoryPassages {
 
         for style in &mut self.stylesheets {
             style.set_file(file.clone());
-        }
-
-        #[cfg(feature = "issue-context")]
-        {
-            self.story_map.set_file(file.clone());
         }
     }
 }
@@ -586,14 +594,18 @@ Test Story
 
 "#
         .to_string();
+        let context = FullContext::from(None, input.clone());
         let out = StoryPassages::from_string(input);
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         assert_eq!(warnings[0], {
-            let warning = Warning::new(WarningType::EscapedOpenSquare)
-                .with_row(7)
-                .with_column(5);
+            let warning = Warning::new(
+                WarningType::EscapedOpenSquare,
+                context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+            )
+            .with_row(7)
+            .with_column(5);
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -630,7 +642,7 @@ Test Story
         let dir = tempdir()?;
         let file_path = dir.path().join("test.twee");
         let mut file = File::create(file_path.clone())?;
-        writeln!(file, "{}", input)?;
+        write!(file, "{}", input.clone())?;
 
         let out = StoryPassages::from_path(file_path);
         assert_eq!(out.has_warnings(), true);
@@ -639,13 +651,17 @@ Test Story
         let story = res.ok().unwrap();
         assert_eq!(story.title.is_some(), true);
         let title_content = story.title.unwrap().content;
+        let context = FullContext::from(Some("test.twee".to_string()), input);
         if let PassageContent::StoryTitle(title) = title_content {
             assert_eq!(title.title, "Test Story");
             assert_eq!(warnings[0], {
-                let warning = Warning::new(WarningType::EscapedOpenSquare)
-                    .with_row(7)
-                    .with_column(5)
-                    .with_file("test.twee".to_string());
+                let warning = Warning::new(
+                    WarningType::EscapedOpenSquare,
+                    context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+                )
+                .with_row(7)
+                .with_column(5)
+                .with_file("test.twee".to_string());
                 #[cfg(not(feature = "issue-context"))]
                 {
                     warning
@@ -656,7 +672,10 @@ Test Story
                     warning.with_context_len(2)
                 }
             });
-            assert_eq!(warnings[1], Warning::new(WarningType::MissingStoryData));
+            assert_eq!(
+                warnings[1],
+                Warning::new(WarningType::MissingStoryData, None)
+            );
         } else {
             panic!("Expected StoryTitle");
         }
@@ -697,10 +716,10 @@ blah blah
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
-        writeln!(file_one, "{}", input_one)?;
+        write!(file_one, "{}", input_one.clone())?;
         let file_path_two = dir.path().join("test2.tw");
         let mut file_two = File::create(file_path_two.clone())?;
-        writeln!(file_two, "{}", input_two)?;
+        write!(file_two, "{}", input_two.clone())?;
 
         let out = StoryPassages::from_path(dir.path());
         assert_eq!(out.has_warnings(), true);
@@ -716,11 +735,15 @@ blah blah
             panic!("Expected StoryTitle");
         }
 
+        let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedOpenCurly)
-                .with_column(6)
-                .with_row(10)
-                .with_file("test.twee".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedOpenCurly,
+                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+            )
+            .with_column(6)
+            .with_row(10)
+            .with_file("test.twee".to_string());
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -732,11 +755,15 @@ blah blah
             }
         }));
 
+        let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedCloseSquare)
-                .with_column(16)
-                .with_row(9)
-                .with_file("test2.tw".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedCloseSquare,
+                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+            )
+            .with_column(16)
+            .with_row(9)
+            .with_file("test2.tw".to_string());
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -784,10 +811,10 @@ blah blah
         let dir = tempdir()?;
         let file_path_one = dir.path().join("test.twee");
         let mut file_one = File::create(file_path_one.clone())?;
-        writeln!(file_one, "{}", input_one)?;
+        write!(file_one, "{}", input_one.clone())?;
         let file_path_two = dir.path().join("test2.tw");
         let mut file_two = File::create(file_path_two.clone())?;
-        writeln!(file_two, "{}", input_two)?;
+        write!(file_two, "{}", input_two.clone())?;
 
         let paths = vec![file_path_one, file_path_two];
         let out = StoryPassages::from_paths(&paths);
@@ -804,11 +831,15 @@ blah blah
             panic!("Expected StoryTitle");
         }
 
+        let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedOpenCurly)
-                .with_column(6)
-                .with_row(10)
-                .with_file("test.twee".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedOpenCurly,
+                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+            )
+            .with_column(6)
+            .with_row(10)
+            .with_file("test.twee".to_string());
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -820,11 +851,15 @@ blah blah
             }
         }));
 
+        let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
-            let warning = Warning::new(WarningType::EscapedCloseSquare)
-                .with_column(16)
-                .with_row(9)
-                .with_file("test2.tw".to_string());
+            let warning = Warning::new(
+                WarningType::EscapedCloseSquare,
+                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+            )
+            .with_column(16)
+            .with_row(9)
+            .with_file("test2.tw".to_string());
             #[cfg(not(feature = "issue-context"))]
             {
                 warning
@@ -920,19 +955,21 @@ Link to [[A passage]]
 }
 "#
         .to_string();
-        let out = StoryPassages::from_string(input);
+        let context = FullContext::from(None, input);
+        let out = StoryPassages::from_context(context.subcontext(..));
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
         assert_eq!(warnings.len(), 1);
         assert_eq!(
             warnings[0],
-            Warning::new(WarningType::DuplicateStoryData)
+            Warning::new(WarningType::DuplicateStoryData, context.subcontext(ContextPosition::new(15, 1)..))
                 .with_column(1)
                 .with_row(15)
-                .with_referent(crate::Position::RowColumn(4, 1))
+                .with_referent(story.data.as_ref().unwrap().context.subcontext(..))
         );
-        assert_eq!(res.is_ok(), true);
-        let story = res.ok().unwrap();
+
         assert_eq!(
             story
                 .data
@@ -968,19 +1005,23 @@ Link to [[A passage]]
 Discarded Duplicate Title
 "#
         .to_string();
-        let out = StoryPassages::from_string(input);
+        let context = FullContext::from(None, input);
+        let out = StoryPassages::from_context(context.subcontext(..));
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
+        assert_eq!(res.is_ok(), true);
+        let story = res.ok().unwrap();
         assert_eq!(warnings.len(), 1);
         assert_eq!(
             warnings[0],
-            Warning::new(WarningType::DuplicateStoryTitle)
-                .with_column(1)
-                .with_row(15)
-                .with_referent(crate::Position::RowColumn(4, 1))
+            Warning::new(
+                WarningType::DuplicateStoryTitle,
+                context.subcontext(ContextPosition::new(15, 1)..)
+            )
+            .with_column(1)
+            .with_row(15)
+            .with_referent(story.title.as_ref().unwrap().context.subcontext(..))
         );
-        assert_eq!(res.is_ok(), true);
-        let story = res.ok().unwrap();
         assert_eq!(story.title.is_some(), true);
         let title_content = story.title.unwrap().content;
         if let PassageContent::StoryTitle(title) = title_content {
@@ -1048,9 +1089,12 @@ Test Story
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
         #[allow(unused_mut)]
-        let mut expected = vec![Warning::new(WarningType::DeadLink("Dead link".to_string()))
-            .with_row(5)
-            .with_column(23)];
+        let mut expected = vec![Warning::new(
+            WarningType::DeadLink("Dead link".to_string()),
+            FullContext::from(None, "TODO: add context for passages".to_string()),
+        )
+        .with_row(5)
+        .with_column(23)];
         #[cfg(feature = "issue-context")]
         {
             expected[0].context_len = Some(13);
@@ -1086,6 +1130,33 @@ Test Story
         assert_eq!(story.get_start_passage_name(), Some("Alt Start"));
     }
 
+        #[test]
+    fn empty_passage() {
+        let input = r#":: Snoopy [dog peanuts]
+Snoopy is a dog in the comic Peanuts.
+
+::Blah
+
+:: Foo[bar]
+
+:: Charlie Brown [person peanuts] {"position":"600,400","size":"100,200"}
+Charlie Brown is a person in the comic Peanuts
+
+:: Styling [stylesheet]
+body {font-size: 1.5em;}
+
+:: StoryData
+{
+    "ifid": "2B68ECD6-348F-4CF5-96F8-549A512A8128",
+    "format": "Harlowe",
+    "formatVersion": "2.1.0",
+    "zoom": 100
+}"#.to_string();
+        let context = FullContext::from(None, input);
+        let out = StoryPassages::parse(context);
+        assert_eq!(out.has_warnings(), false);
+    }
+
     #[test]
     fn dead_start() {
         let input = r#":: Alt Start
@@ -1104,7 +1175,8 @@ Test Story
 }
 "#
         .to_string();
-        let out = StoryPassages::from_string(input);
+        let context = FullContext::from(None, input);
+        let out = StoryPassages::from_context(context.subcontext(..));
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
@@ -1112,11 +1184,11 @@ Test Story
         warnings.append(&mut check_warnings);
         assert_eq!(
             warnings,
-            vec![
-                Warning::new(WarningType::DeadStartPassage("Alternate Start".to_string()))
-                    .with_row(10)
-                    .with_column(1)
-            ]
+            vec![Warning::new(
+                WarningType::DeadStartPassage("Alternate Start".to_string()),
+                context.subcontext(ContextPosition::new(10, 1)..))
+            .with_row(10)
+            .with_column(1)]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));
     }
@@ -1135,7 +1207,10 @@ blah blah
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
-        assert_eq!(warnings, vec![Warning::new(WarningType::MissingStoryTitle)]);
+        assert_eq!(
+            warnings,
+            vec![Warning::new(WarningType::MissingStoryTitle, None)]
+        );
         assert_eq!(story.get_start_passage_name(), Some("Start"));
     }
 
@@ -1164,7 +1239,7 @@ Test Story
         warnings.append(&mut check_warnings);
         assert_eq!(
             warnings,
-            vec![Warning::new(WarningType::MissingStartPassage)]
+            vec![Warning::new(WarningType::MissingStartPassage, None)]
         );
         assert_eq!(story.get_start_passage_name(), None);
     }

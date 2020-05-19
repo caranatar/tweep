@@ -27,6 +27,9 @@ pub struct Passage {
 
     /// The content
     pub content: PassageContent,
+
+    /// The context
+    pub context: FullContext,
 }
 
 impl Passage {
@@ -47,10 +50,11 @@ impl Passage {
     /// let passage = Passage::new(header, content.into_result());
     /// assert!(passage.is_ok());
     /// ```
-    pub fn new<'a>(
-        header: Output<Result<PassageHeader, ErrorList<'a>>>,
-        content: Output<Result<PassageContent, ErrorList<'a>>>,
-    ) -> Output<Result<Self, ErrorList<'a>>> {
+    pub fn new(
+        header: Output<Result<PassageHeader, ErrorList>>,
+        content: Output<Result<PassageContent, ErrorList>>,
+        context: FullContext,
+    ) -> Output<Result<Self, ErrorList>> {
         // Move out the header and its associated warnings
         let (mut header_res, mut warnings) = header.take();
 
@@ -69,7 +73,7 @@ impl Passage {
             Ok(_) => {
                 let header = header_res.ok().unwrap();
                 let content = content_res.ok().unwrap();
-                Ok(Passage { header, content })
+                Ok(Passage { header, content, context })
             }
         })
         .with_warnings(warnings)
@@ -124,7 +128,7 @@ impl Passage {
         };
 
         // Assemble and return the output
-        Self::new(header, content.with_offset_row(1))
+        Self::new(header, content.with_offset_row(1), context)
     }
 }
 
