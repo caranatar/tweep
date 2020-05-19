@@ -34,8 +34,8 @@ mod util {
 
     pub(crate) fn end_of_line(
         line: usize,
-        line_starts: &Vec<usize>,
-        contents: &String,
+        line_starts: &[usize],
+        contents: &str,
     ) -> Position {
         let start = line_starts[line - 1];
         let len = if line >= line_starts.len() {
@@ -56,16 +56,13 @@ impl FullContext {
         contents: Rc<String>,
         line_starts: Rc<Vec<usize>>,
     ) -> Self {
-        let contents = contents.into();
-        let line_starts = line_starts.into();
-        let res = FullContext {
+        FullContext {
             file_name,
             start_position,
             end_position,
             contents,
             line_starts,
-        };
-        res
+        }
     }
 
     /// Given a 1-indexed line number, returns a position at the end of the line
@@ -75,7 +72,7 @@ impl FullContext {
             util::end_of_line(
                 self.get_start_position().subposition(line, 1).line,
                 self.get_line_starts(),
-                self.contents.borrow(),
+                self.contents.as_str().borrow(),
             )
             .column,
         )

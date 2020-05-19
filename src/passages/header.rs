@@ -95,11 +95,9 @@ impl PassageHeader {
             // Generate appropriate error
             errors.push(
                 if trimmed.starts_with("::") {
-                    let err = Error::new(ErrorType::LeadingWhitespace, context.clone());
-                    err
+                    Error::new(ErrorType::LeadingWhitespace, context.clone())
                 } else {
-                    let err = Error::new(ErrorType::MissingSigil, context.clone());
-                    err
+                    Error::new(ErrorType::MissingSigil, context.clone())
                 }
             );
         }

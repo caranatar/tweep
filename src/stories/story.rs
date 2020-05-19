@@ -185,7 +185,7 @@ impl std::convert::From<StoryPassages> for Story {
     fn from(s: StoryPassages) -> Story {
         let title = match s.title {
             Some(c) => match c.content {
-                PassageContent::StoryTitle(t) => Some(t.title.to_string()),
+                PassageContent::StoryTitle(t) => Some(t.title),
                 _ => panic!("Expected title to be StoryTitle"),
             },
             None => None,

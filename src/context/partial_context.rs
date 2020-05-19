@@ -27,7 +27,7 @@ impl std::convert::From<FullContext> for PartialContext {
     fn from(full: FullContext) -> PartialContext {
         PartialContext {
             file_name: full.get_file_name().clone(),
-            start_position: full.get_start_position().clone(),
+            start_position: *full.get_start_position(),
         }
     }
 }

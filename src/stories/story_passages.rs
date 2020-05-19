@@ -173,7 +173,7 @@ impl StoryPassages {
                 let err_string = format!("{}", file.err().unwrap());
                 return Output::new(Err(Error::new(
                     crate::ErrorType::BadInputPath(path_string, err_string),
-                    FullContext::from(None, file_name.clone()),
+                    FullContext::from(None, file_name),
                 )
                 .into()));
             }
@@ -190,13 +190,13 @@ impl StoryPassages {
                 let err_string = format!("{}", res.err().unwrap());
                 return Output::new(Err(Error::new(
                     crate::ErrorType::BadInputPath(path_string, err_string),
-                    FullContext::from(None, file_name.clone()),
+                    FullContext::from(None, file_name),
                 )
                 .into()));
             }
 
             // Create the object from the contents, add file name to Positions
-            let context = FullContext::from(Some(file_name.clone()), contents);
+            let context = FullContext::from(Some(file_name), contents);
             StoryPassages::from_context(context)
         } else if path.is_dir() {
             let dir = std::fs::read_dir(path);
@@ -442,7 +442,7 @@ impl StoryPassages {
                 if let Some((i, _)) = iter.find(|&(_, line)| line.trim_start().starts_with("::")) {
                     context.end_of_line(i)
                 } else {
-                    context.get_end_position().clone()
+                    *context.get_end_position()
                 };
 
             let next_line = subcontext_end.line + 1;

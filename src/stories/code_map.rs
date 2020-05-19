@@ -15,23 +15,23 @@ pub struct CodeMap {
 
 impl CodeMap {
     /// Gets the context for file id `id`
-    pub fn get_context<'a>(&'a self, id: usize) -> Option<&'a FullContext> {
+    pub fn get_context(&self, id: usize) -> Option<&FullContext> {
         self.contexts.get(&id)
     }
 
     /// Gets the file name for file id `id`
-    pub fn lookup_name<'a>(&'a self, id: usize) -> Option<&'a str> {
-        self.id_file_map.get_by_left(&id).and_then(|x| Some(x.as_str()))
+    pub fn lookup_name(&self, id: usize) -> Option<&str> {
+        self.id_file_map.get_by_left(&id).map(|x| x.as_str())
     }
 
     /// Gets the file id for file name `name`
     pub fn lookup_id(&self, name: String) -> Option<usize> {
-        self.id_file_map.get_by_right(&name).and_then(|x| Some(*x))
+        self.id_file_map.get_by_right(&name).copied()
     }
 
     /// Gets the byte location of line starts for file id `id`
-    pub fn line_starts<'a>(&'a self, id: usize) -> Option<&'a Vec<usize>> {
-        self.get_context(id).and_then(|context| Some(context.get_line_starts()))
+    pub fn line_starts(&self, id: usize) -> Option<&Vec<usize>> {
+        self.get_context(id).map(|context| context.get_line_starts())
     }
 
     /// Gets the byte range of the line `line` for file id `id`
