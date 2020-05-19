@@ -9,11 +9,4 @@ pub(crate) struct InternalTwineLink {
 
     /// The context of the link
     pub(crate) context: FullContext,
-
-    /// The column at which the link occurs within the row
-    pub(crate) col_offset: usize,
-
-    /// The row at which the link occurs within the passage content
-    pub(crate) row_offset: usize,
-
 }

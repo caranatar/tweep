@@ -1,6 +1,5 @@
 #[cfg(feature = "issue-context")]
 use crate::FullContext;
-use crate::Position;
 use crate::WarningType;
 
 /// A warning with a [`WarningType`], [`Position`], and optionally a reference
@@ -24,9 +23,6 @@ pub struct Warning {
     /// The context of this Warning
     pub context: Option<FullContext>,
 
-    /// The location of the warning
-    pub position: Position,
-
     /// The location referenced by this warning
     pub referent: Option<FullContext>,
 }
@@ -45,7 +41,6 @@ impl Warning {
         Warning {
             warning_type,
             context: context.into(),
-            position: Position::StoryLevel,
             referent: None,
         }
     }
@@ -126,7 +121,7 @@ impl std::fmt::Display for Warning {
         } else {
             String::new()
         };
-        write!(f, "{} at {}{}", self.warning_type, self.position, cause)
+        write!(f, "{} at {:?}{}", self.warning_type, self.context, cause)
     }
 }
 

@@ -333,7 +333,7 @@ impl StoryPassages {
             })
             .and_then(|passage| {
                 // There was an attempt to parse a StoryData passage
-                if let PassageContent::StoryData(maybe_data, _) = &passage.content {
+                if let PassageContent::StoryData(maybe_data) = &passage.content {
                     maybe_data
                         .as_ref()
                         // If there is parsed StoryData, get the start field
@@ -350,7 +350,6 @@ impl StoryPassages {
                                 // but it does not exist
                                 warnings.push(Warning {
                                     warning_type: WarningType::DeadStartPassage(start.clone()),
-                                    position: passage.header.position.clone(),
                                     referent: None,
                                     context: Some(passage.context.clone()),
                                 });
@@ -376,7 +375,6 @@ impl StoryPassages {
                     if !self.passages.contains_key(link.target.trim()) {
                         warnings.push(Warning {
                             warning_type: WarningType::DeadLink(link.target.clone()),
-                            position: link.position.clone(),
                             referent: None,
                             context: Some(link.context.clone()),
                         });
@@ -396,7 +394,7 @@ impl StoryPassages {
         self.data
             .as_ref()
             .and_then(|d| match &d.content {
-                PassageContent::StoryData(story_data, _) => story_data.as_ref(),
+                PassageContent::StoryData(story_data) => story_data.as_ref(),
                 _ => None,
             })
             .and_then(|d| d.start.as_deref())
@@ -473,7 +471,6 @@ impl StoryPassages {
                     if let Some(existing) = &title {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryTitle,
-                            position: passage.header.position.clone(),
                             referent: Some(existing.context.clone()),
                             context: Some(passage.context.clone()),
                         };
@@ -482,11 +479,10 @@ impl StoryPassages {
                         title = Some(passage);
                     }
                 }
-                PassageContent::StoryData(_, _) => {
+                PassageContent::StoryData(_) => {
                     if let Some(existing) = &data {
                         let warning = Warning {
                             warning_type: WarningType::DuplicateStoryData,
-                            position: passage.header.position.clone(),
                             referent: Some(existing.context.clone()),
                             context: Some(passage.context.clone()),
                         };
@@ -871,7 +867,7 @@ Link to [[A passage]]
             story
                 .data
                 .and_then(|passage| {
-                    if let PassageContent::StoryData(data, _) = passage.content {
+                    if let PassageContent::StoryData(data) = passage.content {
                         data
                     } else {
                         None

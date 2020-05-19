@@ -130,9 +130,6 @@ pub use passages::StylesheetContent;
 pub use passages::TwineContent;
 pub use passages::TwineLink;
 
-mod positions;
-pub use positions::Position;
-
 mod stories;
 #[cfg(feature = "issue-context")]
 pub use stories::CodeMap;

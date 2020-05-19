@@ -1,5 +1,4 @@
 use crate::ErrorType;
-use crate::Position;
 use crate::FullContext;
 
 /// An error with an owned [`ErrorType`] and [`Position`]
@@ -10,9 +9,6 @@ use crate::FullContext;
 pub struct Error {
     /// The type of error
     pub error_type: ErrorType,
-
-    /// The location of the error
-    pub position: Position,
 
     /// The context of the error
     pub context: Option<FullContext>,
@@ -37,7 +33,6 @@ impl Error {
     pub fn new<T: Into<Option<FullContext>>>(error_type: ErrorType, context: T) -> Self {
         Error {
             error_type,
-            position: Position::StoryLevel,
             context: context.into(),
         }
     }
@@ -63,6 +58,6 @@ impl std::error::Error for Error {
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} at {}", self.error_type, self.position)
+        write!(f, "{} at {:?}", self.error_type, self.context)
     }
 }

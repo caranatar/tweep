@@ -1,7 +1,6 @@
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
-use crate::Position;
 
 /// The content of a [`Passage`] tagged with `script`, containing script data.
 ///
@@ -18,9 +17,6 @@ use crate::Position;
 pub struct ScriptContent {
     /// The full content of the passage
     pub content: String,
-
-    /// The position of the content
-    pub position: Position,
 }
 
 impl ScriptContent {
@@ -28,7 +24,6 @@ impl ScriptContent {
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         Output::new(Ok(ScriptContent {
             content: context.get_contents().to_string(),
-            position: Position::default(),
         }))
     }
 }

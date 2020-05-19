@@ -2,7 +2,6 @@ use crate::issues::*;
 #[cfg(feature = "issue-context")]
 use crate::FullContext;
 use crate::Output;
-use crate::Position;
 use crate::ContextPosition;
 
 use std::ops::Range;
@@ -66,9 +65,6 @@ pub struct PassageHeader {
 
     /// A json object containing metadata for the passage
     pub metadata: serde_json::Map<String, serde_json::Value>,
-
-    /// The position of the header
-    pub position: Position,
 }
 
 impl PassageHeader {
@@ -215,7 +211,6 @@ impl PassageHeader {
                 name,
                 tags,
                 metadata,
-                position: Position::default(),
             }))
             .with_warnings(warnings)
         } else {

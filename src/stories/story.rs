@@ -193,7 +193,7 @@ impl std::convert::From<StoryPassages> for Story {
 
         let data = match s.data {
             Some(c) => match c.content {
-                PassageContent::StoryData(d, _) => d,
+                PassageContent::StoryData(d) => d,
                 _ => panic!("Expected data to be StoryData"),
             },
             None => None,

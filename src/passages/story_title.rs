@@ -1,7 +1,6 @@
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
-use crate::Position;
 
 /// The content of a special passage with the `StoryTitle` name, which will be
 /// used as the title for a parsed story
@@ -23,9 +22,6 @@ use crate::Position;
 pub struct StoryTitle {
     /// The title content
     pub title: String,
-
-    /// The position of the content
-    pub position: Position,
 }
 
 impl StoryTitle {
@@ -33,7 +29,6 @@ impl StoryTitle {
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         Output::new(Ok(StoryTitle {
             title: context.get_contents().to_string(),
-            position: Position::default(),
         }))
     }
 }

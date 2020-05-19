@@ -4,7 +4,6 @@ use crate::ErrorList;
 use crate::FullContext;
 use crate::InternalTwineLink;
 use crate::Output;
-use crate::Position;
 use crate::TwineLink;
 use crate::Warning;
 use crate::WarningType;
@@ -52,9 +51,6 @@ pub struct TwineContent {
     /// The content of the passage
     pub content: String,
 
-    /// The position of the passage
-    pub position: Position,
-
     /// The pid (Passage ID) of the passage
     pub pid: usize,
 
@@ -71,10 +67,7 @@ impl TwineContent {
         for link in &self.linked_passages {
             links.push(TwineLink {
                 target: link.target.clone(),
-                position: self.position.clone(),
                 context: link.context.clone(),
-                #[cfg(feature = "issue-context")]
-                context_len: link.context_len,
             });
         }
         links
@@ -150,7 +143,6 @@ impl TwineContent {
         content.push('\n');
         Output::new(Ok(TwineContent {
             content,
-            position: Position::default(),
             linked_passages,
             pid: 1,
         }))

@@ -1,4 +1,3 @@
-use crate::Position;
 use crate::FullContext;
 
 /// A link to a twee passage contained within a twee passage
@@ -9,10 +8,6 @@ pub struct TwineLink {
 
     /// The context of the link
     pub context: FullContext,
-
-    /// The position of the link
-    pub position: Position,
-
 }
 
 impl TwineLink {
@@ -22,7 +17,6 @@ impl TwineLink {
     pub fn new(target: String, context: FullContext) -> Self {
         TwineLink {
             target,
-            position: Position::default(),
             context,
         }
     }

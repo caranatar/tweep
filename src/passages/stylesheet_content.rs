@@ -1,7 +1,6 @@
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
-use crate::Position;
 
 /// The contents of a [`Passage`] tagged with `stylesheet`, containing CSS data.
 ///
@@ -18,9 +17,6 @@ use crate::Position;
 pub struct StylesheetContent {
     /// The stylesheet content
     pub content: String,
-
-    /// The position of the content
-    pub position: Position,
 }
 
 impl StylesheetContent {
@@ -28,7 +24,6 @@ impl StylesheetContent {
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
         Output::new(Ok(StylesheetContent {
             content: context.get_contents().to_string(),
-            position: Position::default(),
         }))
     }
 }

@@ -1,4 +1,3 @@
-use crate::Position;
 use crate::ScriptContent;
 use crate::StoryData;
 use crate::StoryTitle;
@@ -17,7 +16,7 @@ pub enum PassageContent {
     StoryTitle(StoryTitle),
 
     /// A passage that contains the story data defined by the specification
-    StoryData(Option<StoryData>, Position),
+    StoryData(Option<StoryData>),
 
     /// A passage that is tagged with `script` and contains a script
     Script(ScriptContent),
@@ -40,18 +39,13 @@ impl std::convert::From<StoryTitle> for PassageContent {
 
 impl std::convert::From<Option<StoryData>> for PassageContent {
     fn from(d: Option<StoryData>) -> PassageContent {
-        let pos = match &d {
-            Some(data) => data.position.clone(),
-            None => Position::default(),
-        };
-        PassageContent::StoryData(d, pos)
+        PassageContent::StoryData(d)
     }
 }
 
 impl std::convert::From<StoryData> for PassageContent {
     fn from(d: StoryData) -> PassageContent {
-        let pos = d.position.clone();
-        PassageContent::StoryData(Some(d), pos)
+        PassageContent::StoryData(Some(d))
     }
 }
 

@@ -2,7 +2,6 @@ use crate::ContextPosition;
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
-use crate::Position;
 use crate::Warning;
 use crate::WarningType;
 use std::collections::HashMap;
@@ -47,10 +46,6 @@ pub struct StoryData {
 
     /// Zoom level for editing in Twine
     pub zoom: Option<f32>,
-
-    /// The position of the content
-    #[serde(skip)]
-    pub position: Position,
 }
 
 impl StoryData {
