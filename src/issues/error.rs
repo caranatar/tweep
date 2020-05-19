@@ -5,7 +5,7 @@ use crate::FullContext;
 ///
 /// [`ErrorType`]: enum.ErrorType.html
 /// [`Position`]: enum.Position.html
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Error {
     /// The type of error
     pub error_type: ErrorType,
@@ -34,18 +34,6 @@ impl Error {
         Error {
             error_type,
             context: context.into(),
-        }
-    }
-}
-
-impl Clone for Error {
-    fn clone(&self) -> Self {
-        Error {
-            error_type: self.error_type.clone(),
-            position: self.position.clone(),
-            #[cfg(feature = "issue-context")]
-            context_len: self.context_len.clone(),
-            context: self.context.as_ref().and_then(|ctx| Some(ctx.clone())),
         }
     }
 }
