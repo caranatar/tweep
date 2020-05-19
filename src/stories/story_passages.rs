@@ -973,16 +973,17 @@ Test Story
 }
 "#
         .to_string();
-        let out = StoryPassages::from_string(input);
+        let context = FullContext::from(None, input);
+        let out = StoryPassages::from_context(context.clone());
         let (res, mut warnings) = out.take();
         assert_eq!(res.is_ok(), true);
         let story = res.ok().unwrap();
         let mut check_warnings = story.check();
         warnings.append(&mut check_warnings);
         #[allow(unused_mut)]
-        let mut expected = vec![Warning::new(
+        let expected = vec![Warning::new(
             WarningType::DeadLink("Dead link".to_string()),
-            FullContext::from(None, "TODO: add context for passages".to_string()),
+            context.subcontext(ContextPosition::new(5, 23)..=ContextPosition::new(5,35))
         )];
         assert_eq!(warnings, expected);
     }
