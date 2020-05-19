@@ -1,4 +1,4 @@
-use crate::context::{ContextPosition, FullContext};
+use crate::context::{Position, FullContext};
 
 /// A Context that holds only an optional file name and 1-indexed start position
 ///
@@ -8,7 +8,7 @@ use crate::context::{ContextPosition, FullContext};
 /// [`FullContext`]: struct.FullContext.html
 pub struct PartialContext {
     file_name: Option<String>,
-    start_position: ContextPosition,
+    start_position: Position,
 }
 
 impl PartialContext {
@@ -18,7 +18,7 @@ impl PartialContext {
     }
 
     /// Returns a reference to the 1-indexed start position
-    pub fn get_start_position(&self) -> &ContextPosition {
+    pub fn get_start_position(&self) -> &Position {
         &self.start_position
     }
 }
@@ -48,7 +48,7 @@ mod tests {
         let c = FullContext::from(None, contents);
         let partial: PartialContext = c.into();
         assert_eq!(*partial.get_file_name(), None);
-        assert_eq!(*partial.get_start_position(), ContextPosition::new(1, 1));
+        assert_eq!(*partial.get_start_position(), Position::new(1, 1));
     }
 
     #[test]
@@ -56,9 +56,9 @@ mod tests {
         let name = "name.ext".to_string();
         let contents = "hail eris".to_string();
         let c = FullContext::from(Some(name), contents);
-        let sub = c.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(2, 3));
+        let sub = c.subcontext(Position::new(1, 6)..=Position::new(2, 3));
         let partial: PartialContext = sub.into();
         assert_eq!(*partial.get_file_name(), Some("name.ext".to_string()));
-        assert_eq!(*partial.get_start_position(), ContextPosition::new(1, 6));
+        assert_eq!(*partial.get_start_position(), Position::new(1, 6));
     }
 }

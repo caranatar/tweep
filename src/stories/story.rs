@@ -261,7 +261,7 @@ Test Story
 
 "#
         .to_string();
-        use crate::ContextPosition;
+        use crate::Position;
         use crate::FullContext;
         let out = Story::from_string(input.clone());
         assert_eq!(out.has_warnings(), true);
@@ -271,7 +271,7 @@ Test Story
         assert_eq!(warnings[0], {
             let warning = Warning::new(
                 WarningType::EscapedOpenSquare,
-                context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+                context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
             );
             warning
         });
@@ -399,13 +399,13 @@ blah blah
         assert_eq!(story.title, Some("Test Story".to_string()));
         assert_eq!(story.get_start_passage_name(), Some("Start"));
 
-        use crate::ContextPosition;
+        use crate::Position;
         use crate::FullContext;
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
             );
             warning
         }));
@@ -414,7 +414,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
             );
             warning
         }));

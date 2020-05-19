@@ -104,7 +104,7 @@
 #![warn(missing_docs)]
 #![warn(missing_doc_code_examples)]
 mod context;
-pub use context::ContextPosition;
+pub use context::Position;
 pub use context::FullContext;
 pub use context::PartialContext;
 

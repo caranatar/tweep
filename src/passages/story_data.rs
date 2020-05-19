@@ -1,4 +1,4 @@
-use crate::ContextPosition;
+use crate::Position;
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
@@ -63,8 +63,8 @@ impl StoryData {
             warnings.push(Warning::new(
                 WarningType::JsonError(err_string),
                 context.subcontext(
-                    ContextPosition::new(err.line(), err.column())
-                        ..=ContextPosition::new(err.line(), err.column()),
+                    Position::new(err.line(), err.column())
+                        ..=Position::new(err.line(), err.column()),
                 ),
             ));
             None

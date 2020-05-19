@@ -1,5 +1,5 @@
 mod position;
-pub use position::ContextPosition;
+pub use position::Position;
 
 mod full_context;
 pub use full_context::FullContext;

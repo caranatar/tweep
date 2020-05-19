@@ -8,7 +8,7 @@ use crate::StoryTitle;
 use crate::StylesheetContent;
 use crate::TwineContent;
 use crate::FullContext;
-use crate::ContextPosition;
+use crate::Position;
 
 /// A complete Twee passage, including header and content
 ///
@@ -109,7 +109,7 @@ impl Passage {
         let len = new_iter.fold(0, |acc, _| acc + 1);
 
         // Create the content's context
-        let content_context = context.subcontext(ContextPosition::new(2,1)..=context.end_of_line(len+1));
+        let content_context = context.subcontext(Position::new(2,1)..=context.end_of_line(len+1));
 
         // Parse the content based on the type indicated by the header
         let content: Output<Result<PassageContent, ErrorList>>;

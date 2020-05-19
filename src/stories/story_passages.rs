@@ -2,7 +2,7 @@
 use crate::CodeMap;
 #[cfg(feature = "issue-context")]
 use crate::ContextErrorList;
-use crate::ContextPosition;
+use crate::Position;
 use crate::Error;
 use crate::ErrorList;
 use crate::FullContext;
@@ -433,7 +433,7 @@ impl StoryPassages {
         iter.next();
 
         // The starting position of the current passage
-        let mut start = ContextPosition::new(1, 1);
+        let mut start = Position::new(1, 1);
 
         let end_line = context.get_end_position().line;
         while start.line <= end_line {
@@ -452,7 +452,7 @@ impl StoryPassages {
             warnings.append(&mut passage_warnings);
 
             // Update the start position
-            start = ContextPosition::new(next_line, 1);
+            start = Position::new(next_line, 1);
 
             // If there's an error, update the row before returning
             if res.is_err() {
@@ -559,7 +559,7 @@ Test Story
         assert_eq!(warnings[0], {
             let warning = Warning::new(
                 WarningType::EscapedOpenSquare,
-                context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+                context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
             );
             warning
         });
@@ -604,7 +604,7 @@ Test Story
             assert_eq!(warnings[0], {
                 let warning = Warning::new(
                     WarningType::EscapedOpenSquare,
-                    context.subcontext(ContextPosition::new(7, 5)..=ContextPosition::new(7, 6)),
+                    context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
                 );
                 warning
             });
@@ -675,7 +675,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
             );
             warning
         }));
@@ -684,7 +684,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
             );
             warning
         }));
@@ -749,7 +749,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(ContextPosition::new(10, 6)..=ContextPosition::new(10, 7)),
+                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
             );
             warning
         }));
@@ -758,7 +758,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(ContextPosition::new(9, 16)..=ContextPosition::new(9, 17)),
+                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
             );
             warning
         }));
@@ -858,7 +858,7 @@ Link to [[A passage]]
             warnings[0],
             Warning::new(
                 WarningType::DuplicateStoryData,
-                context.subcontext(ContextPosition::new(15, 1)..)
+                context.subcontext(Position::new(15, 1)..)
             )
             .with_referent(story.data.as_ref().unwrap().context.clone())
         );
@@ -909,7 +909,7 @@ Discarded Duplicate Title
             warnings[0],
             Warning::new(
                 WarningType::DuplicateStoryTitle,
-                context.subcontext(ContextPosition::new(15, 1)..)
+                context.subcontext(Position::new(15, 1)..)
             )
             .with_referent(story.title.as_ref().unwrap().context.clone())
         );
@@ -983,7 +983,7 @@ Test Story
         #[allow(unused_mut)]
         let expected = vec![Warning::new(
             WarningType::DeadLink("Dead link".to_string()),
-            context.subcontext(ContextPosition::new(5, 23)..=ContextPosition::new(5,35))
+            context.subcontext(Position::new(5, 23)..=Position::new(5,35))
         )];
         assert_eq!(warnings, expected);
     }
@@ -1073,7 +1073,7 @@ Test Story
             warnings,
             vec![Warning::new(
                 WarningType::DeadStartPassage("Alternate Start".to_string()),
-                context.subcontext(ContextPosition::new(10, 1)..)
+                context.subcontext(Position::new(10, 1)..)
             )]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));

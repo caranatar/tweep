@@ -1,4 +1,4 @@
-use crate::ContextPosition;
+use crate::Position;
 #[cfg(feature = "issue-context")]
 use crate::ErrorList;
 use crate::FullContext;
@@ -91,8 +91,8 @@ impl TwineContent {
                             Warning::new(
                                 WarningType::UnclosedLink,
                                 context.subcontext(
-                                    ContextPosition::new(row + 1, start + 1)
-                                        ..=ContextPosition::new(row + 1, line.len()),
+                                    Position::new(row + 1, start + 1)
+                                        ..=Position::new(row + 1, line.len()),
                                 ),
                             )
                         });
@@ -100,8 +100,8 @@ impl TwineContent {
                     }
                 };
                 let link_context = context.subcontext(
-                    ContextPosition::new(row + 1, start + 1)
-                        ..=ContextPosition::new(row + 1, end + 2),
+                    Position::new(row + 1, start + 1)
+                        ..=Position::new(row + 1, end + 2),
                 );
                 let link_content = &line[start + 2..end];
                 let linked_passage = if link_content.contains('|') {
@@ -181,8 +181,8 @@ mod tests {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
                     context.subcontext(
-                        ContextPosition::new(row, 1)
-                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                        Position::new(row, 1)
+                            ..=Position::new(row, expected_lens[row - 1]),
                     ),
                 )
             })
@@ -197,7 +197,7 @@ mod tests {
         let (res, warnings) = out.take();
         let expected = Warning::new(
             WarningType::UnclosedLink,
-            context.subcontext(ContextPosition::new(1, 6)..=ContextPosition::new(1, 15)),
+            context.subcontext(Position::new(1, 6)..=Position::new(1, 15)),
         );
         assert_eq!(warnings, vec![expected]);
         assert_eq!(res.is_ok(), true);
@@ -225,8 +225,8 @@ mod tests {
                 Warning::new(
                     WarningType::WhitespaceInLink,
                     context.subcontext(
-                        ContextPosition::new(row, 1)
-                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                        Position::new(row, 1)
+                            ..=Position::new(row, expected_lens[row - 1]),
                     ),
                 )
             })
@@ -242,8 +242,8 @@ mod tests {
                 TwineLink::new(
                     expected_targets[row - 1].to_string(),
                     context.subcontext(
-                        ContextPosition::new(row, 1)
-                            ..=ContextPosition::new(row, expected_lens[row - 1]),
+                        Position::new(row, 1)
+                            ..=Position::new(row, expected_lens[row - 1]),
                     ),
                 )
             })
