@@ -508,6 +508,7 @@ impl StoryPassages {
             }
         }
 
+        #[cfg(feature = "issue-context")]
         code_map.add(context);
         match errors {
             Ok(_) => {

@@ -70,7 +70,6 @@ impl TwineContent {
     pub fn get_links(&self) -> Vec<TwineLink> {
         let mut links = Vec::new();
         for link in &self.linked_passages {
-            println!("get_links: {} bottom text", link.context.get_contents());
             links.push(TwineLink {
                 target: link.target.clone(),
                 position: self.position.clone(),
