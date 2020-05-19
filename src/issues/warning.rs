@@ -1,4 +1,3 @@
-#[cfg(feature = "issue-context")]
 use crate::FullContext;
 use crate::WarningType;
 

@@ -1,5 +1,4 @@
 use crate::Position;
-#[cfg(feature = "issue-context")]
 use crate::ErrorList;
 use crate::FullContext;
 use crate::InternalTwineLink;

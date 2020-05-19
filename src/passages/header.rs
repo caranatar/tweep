@@ -1,5 +1,4 @@
 use crate::issues::*;
-#[cfg(feature = "issue-context")]
 use crate::FullContext;
 use crate::Output;
 use crate::Position;
