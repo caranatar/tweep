@@ -1,11 +1,11 @@
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 mod code_map;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 pub use code_map::CodeMap;
 
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 mod context_error_list;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 pub use context_error_list::ContextErrorList;
 
 mod story;

@@ -38,8 +38,8 @@ use crate::WarningType;
 /// let out = TwineContent::parse(FullContext::from(None, input));
 /// # assert!(!out.has_warnings());
 /// # assert_eq!(out.get_output().as_ref().ok().unwrap().get_links(), vec![
-///    TwineLink { target: "link".to_string(), position: Position::RowColumn(1, 43), #[cfg(feature = "issue-context")] context_len: 8 },
-/// #   TwineLink { target: "Another passage".to_string(), position: Position::RowColumn(2, 10), #[cfg(feature = "issue-context")] context_len: 31 }]);
+///    TwineLink { target: "link".to_string(), position: Position::RowColumn(1, 43), #[cfg(feature = "full-context")] context_len: 8 },
+/// #   TwineLink { target: "Another passage".to_string(), position: Position::RowColumn(2, 10), #[cfg(feature = "full-context")] context_len: 31 }]);
 /// ```
 ///
 /// [`Position`]: enum.Position.html

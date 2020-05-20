@@ -1,6 +1,6 @@
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 use crate::CodeMap;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 use crate::ContextErrorList;
 use crate::Position;
 use crate::Error;
@@ -11,7 +11,7 @@ use crate::Passage;
 use crate::PassageContent;
 use crate::Warning;
 use crate::WarningType;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 use bimap::BiMap;
 use std::collections::HashMap;
 use std::default::Default;
@@ -19,9 +19,9 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-#[cfg(not(feature = "issue-context"))]
+#[cfg(not(feature = "full-context"))]
 type StoryPassagesParseOutput = Output<Result<StoryPassages, ErrorList>>;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 type StoryPassagesParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 /// A parsed Twee story, that stores the full [`Passage`] object of each field
@@ -48,13 +48,13 @@ pub struct StoryPassages {
     pub stylesheets: Vec<Passage>,
 
     /// StoryMap for this story
-    #[cfg(feature = "issue-context")]
+    #[cfg(feature = "full-context")]
     pub code_map: CodeMap,
 }
 
-#[cfg(not(feature = "issue-context"))]
+#[cfg(not(feature = "full-context"))]
 type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 impl StoryPassages {
@@ -70,7 +70,7 @@ impl StoryPassages {
         }
     }
 
-    #[cfg(feature = "issue-context")]
+    #[cfg(feature = "full-context")]
     fn renumber_file_ids(&mut self, start: usize) {
         let mut new_id_file_map = BiMap::new();
         let mut new_contexts = HashMap::new();
@@ -256,7 +256,7 @@ impl StoryPassages {
 
         other.renumber_pids(self.passages.len() + 1);
 
-        #[cfg(feature = "issue-context")]
+        #[cfg(feature = "full-context")]
         {
             other.renumber_file_ids(self.code_map.contexts.len());
             self.code_map.contexts.extend(other.code_map.contexts);
@@ -410,7 +410,7 @@ impl StoryPassages {
     pub(crate) fn parse(context: FullContext) -> StoryPassagesParseOutput {
         let contents = context.get_contents();
 
-        #[cfg(feature = "issue-context")]
+        #[cfg(feature = "full-context")]
         let mut code_map = CodeMap::default();
 
         // Story variables
@@ -496,7 +496,7 @@ impl StoryPassages {
             }
         }
 
-        #[cfg(feature = "issue-context")]
+        #[cfg(feature = "full-context")]
         code_map.add(context);
         match errors {
             Ok(_) => {
@@ -506,13 +506,13 @@ impl StoryPassages {
                     passages,
                     scripts,
                     stylesheets,
-                    #[cfg(feature = "issue-context")]
+                    #[cfg(feature = "full-context")]
                     code_map,
                 };
                 Output::new(Ok(story))
             }
             Err(e) => {
-                #[cfg(feature = "issue-context")]
+                #[cfg(feature = "full-context")]
                 let e = ContextErrorList {
                     error_list: e,
                     code_map,

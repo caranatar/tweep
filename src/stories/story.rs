@@ -1,8 +1,8 @@
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 use crate::CodeMap;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 use crate::ContextErrorList;
-#[cfg(not(feature = "issue-context"))]
+#[cfg(not(feature = "full-context"))]
 use crate::ErrorList;
 use crate::Output;
 use crate::Passage;
@@ -125,13 +125,13 @@ pub struct Story {
     pub stylesheets: Vec<String>,
 
     /// StoryMap for this story
-    #[cfg(feature = "issue-context")]
+    #[cfg(feature = "full-context")]
     pub code_map: CodeMap,
 }
 
-#[cfg(not(feature = "issue-context"))]
+#[cfg(not(feature = "full-context"))]
 type ParseOutput = Output<Result<Story, ErrorList>>;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 type ParseOutput = Output<Result<Story, ContextErrorList>>;
 
 impl Story {
@@ -219,7 +219,7 @@ impl std::convert::From<StoryPassages> for Story {
 
         let passages = s.passages;
 
-        #[cfg(feature = "issue-context")]
+        #[cfg(feature = "full-context")]
         let code_map = s.code_map;
 
         Story {
@@ -228,7 +228,7 @@ impl std::convert::From<StoryPassages> for Story {
             passages,
             scripts,
             stylesheets,
-            #[cfg(feature = "issue-context")]
+            #[cfg(feature = "full-context")]
             code_map,
         }
     }

@@ -131,9 +131,9 @@ pub use passages::TwineContent;
 pub use passages::TwineLink;
 
 mod stories;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 pub use stories::CodeMap;
-#[cfg(feature = "issue-context")]
+#[cfg(feature = "full-context")]
 pub use stories::ContextErrorList;
 pub use stories::Story;
 pub use stories::StoryPassages;

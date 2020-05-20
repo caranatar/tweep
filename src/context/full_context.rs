@@ -78,7 +78,7 @@ impl FullContext {
         )
     }
 
-    #[cfg(feature = "issue-context")]
+    #[cfg(feature = "full-context")]
     pub(crate) fn line_bytes(&self, line: usize) -> std::ops::RangeInclusive<usize> {
         let (start, end) = self.line_range(line).into_inner();
         let start_byte = util::to_byte_index(&start, &self.line_starts, false);
