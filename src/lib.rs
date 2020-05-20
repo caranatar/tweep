@@ -119,7 +119,6 @@ mod output;
 pub use output::Output;
 
 mod passages;
-pub(crate) use passages::InternalTwineLink;
 pub use passages::Passage;
 pub use passages::PassageContent;
 pub use passages::PassageHeader;

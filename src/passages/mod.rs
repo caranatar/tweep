@@ -1,9 +1,6 @@
 mod header;
 pub use header::PassageHeader;
 
-mod internal_twine_link;
-pub(crate) use internal_twine_link::InternalTwineLink;
-
 mod passage;
 pub use passage::Passage;
 

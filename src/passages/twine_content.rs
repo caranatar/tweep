@@ -1,7 +1,6 @@
 use crate::Position;
 use crate::ErrorList;
 use crate::FullContext;
-use crate::InternalTwineLink;
 use crate::Output;
 use crate::TwineLink;
 use crate::Warning;
@@ -54,27 +53,20 @@ pub struct TwineContent {
     pub pid: usize,
 
     /// A list of parsed links in this content
-    linked_passages: Vec<InternalTwineLink>,
+    links: Vec<TwineLink>,
 }
 
 impl TwineContent {
     /// Gets a [`Vec`] of all the links contained within this content
     ///
     /// [`Vec`]: std::Vec
-    pub fn get_links(&self) -> Vec<TwineLink> {
-        let mut links = Vec::new();
-        for link in &self.linked_passages {
-            links.push(TwineLink {
-                target: link.target.clone(),
-                context: link.context.clone(),
-            });
-        }
-        links
+    pub fn get_links(&self) -> &Vec<TwineLink> {
+        &self.links
     }
 
     /// Parses a `TwineContent` out of the given context
     pub fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
-        let mut linked_passages = Vec::new();
+        let mut links = Vec::new();
         let mut warnings = Vec::new();
         for (row, line) in context.get_contents().split('\n').enumerate() {
             let mut start = 0;
@@ -129,7 +121,7 @@ impl TwineContent {
                     });
                 }
 
-                linked_passages.push(InternalTwineLink {
+                links.push(TwineLink {
                     target: linked_passage.to_string(),
                     context: link_context.clone(),
                 });
@@ -142,7 +134,7 @@ impl TwineContent {
         content.push('\n');
         Output::new(Ok(TwineContent {
             content,
-            linked_passages,
+            links,
             pid: 1,
         }))
         .with_warnings(warnings)
@@ -186,7 +178,7 @@ mod tests {
                 )
             })
             .collect();
-        assert_eq!(content.get_links(), expected_links);
+        assert_eq!(content.get_links(), &expected_links);
     }
 
     #[test]
@@ -201,7 +193,7 @@ mod tests {
         assert_eq!(warnings, vec![expected]);
         assert_eq!(res.is_ok(), true);
         let content = res.ok().unwrap();
-        assert_eq!(content.linked_passages.is_empty(), true);
+        assert!(content.links.is_empty());
     }
 
     #[test]
@@ -247,6 +239,6 @@ mod tests {
                 )
             })
             .collect();
-        assert_eq!(content.get_links(), expected_links);
+        assert_eq!(content.get_links(), &expected_links);
     }
 }
