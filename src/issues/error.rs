@@ -21,15 +21,14 @@ impl Error {
     /// # Examples
     /// ```
     /// use tweep::{Error, ErrorType};
-    /// # use tweep::{FullContext, Position, Positional};
+    /// # use tweep::{FullContext};
     /// # let context = FullContext::from(None, "::".to_string());
     /// let error = Error::new(ErrorType::EmptyName, context);
     /// # assert_eq!(error.error_type, ErrorType::EmptyName);
-    /// # assert_eq!(error.get_position(), &Position::default());
     /// ```
     ///
     /// [`ErrorType`]: enum.ErrorType.html
-    /// [`Position`]: enum.Position.html
+    /// [`Position`]: struct.Position.html
     pub fn new<T: Into<Option<FullContext>>>(error_type: ErrorType, context: T) -> Self {
         Error {
             error_type,

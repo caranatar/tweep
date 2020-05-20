@@ -5,10 +5,10 @@ use crate::ContextErrorList;
 #[cfg(not(feature = "full-context"))]
 use crate::ErrorList;
 use crate::Output;
-use crate::Passage;
 use crate::PassageContent;
 use crate::StoryData;
 use crate::StoryPassages;
+use crate::TwinePassage;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -115,8 +115,8 @@ pub struct Story {
     /// The story data as defined by the specification
     pub data: Option<StoryData>,
 
-    /// Map from passage name to `Passage` for any non-special passages
-    pub passages: HashMap<String, Passage>,
+    /// Map from passage name to `TwinePassage` for any non-special passages
+    pub passages: HashMap<String, TwinePassage>,
 
     /// A list of the contents of any passages tagged with `script`
     pub scripts: Vec<String>,
@@ -182,7 +182,7 @@ impl Story {
 }
 
 impl std::convert::From<StoryPassages> for Story {
-    fn from(s: StoryPassages) -> Story {
+    fn from(mut s: StoryPassages) -> Story {
         let title = match s.title {
             Some(c) => match c.content {
                 PassageContent::StoryTitle(t) => Some(t.title),
@@ -217,7 +217,7 @@ impl std::convert::From<StoryPassages> for Story {
             })
             .collect();
 
-        let passages = s.passages;
+        let passages:HashMap<String, TwinePassage> = s.passages.drain().map(|(k, v)| (k, v.into())).collect();
 
         #[cfg(feature = "full-context")]
         let code_map = s.code_map;

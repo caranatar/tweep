@@ -24,3 +24,6 @@ pub use twine_content::TwineContent;
 
 mod twine_link;
 pub use twine_link::TwineLink;
+
+mod twine_passage;
+pub use twine_passage::TwinePassage;

@@ -128,6 +128,7 @@ pub use passages::StoryTitle;
 pub use passages::StylesheetContent;
 pub use passages::TwineContent;
 pub use passages::TwineLink;
+pub use passages::TwinePassage;
 
 mod stories;
 #[cfg(feature = "full-context")]
