@@ -105,6 +105,7 @@
 #![warn(missing_doc_code_examples)]
 mod context;
 pub use context::Position;
+pub use context::PositionKind;
 pub use context::FullContext;
 pub use context::PartialContext;
 

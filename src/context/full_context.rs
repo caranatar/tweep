@@ -1,4 +1,5 @@
 use crate::context::Position;
+use crate::context::PositionKind;
 use std::borrow::Borrow;
 use std::rc::Rc;
 
@@ -20,11 +21,7 @@ mod util {
         std::iter::once(0).chain(s.match_indices('\n').map(|(i, _)| i + 1))
     }
 
-    pub(crate) fn to_byte_index(
-        p: &Position,
-        line_starts: &[usize],
-        inclusive: bool,
-    ) -> usize {
+    pub(crate) fn to_byte_index(p: &Position, line_starts: &[usize], inclusive: bool) -> usize {
         let mut x = line_starts[p.line - 1] + p.column;
         if !inclusive {
             x -= 1;
@@ -32,11 +29,7 @@ mod util {
         x
     }
 
-    pub(crate) fn end_of_line(
-        line: usize,
-        line_starts: &[usize],
-        contents: &str,
-    ) -> Position {
+    pub(crate) fn end_of_line(line: usize, line_starts: &[usize], contents: &str) -> Position {
         let start = line_starts[line - 1];
         let len = if line >= line_starts.len() {
             contents[start..].len()
@@ -44,7 +37,7 @@ mod util {
             // Don't want ending newline
             line_starts[line] - start - 1
         };
-        Position::new(line, len)
+        Position::abs(line, len)
     }
 }
 
@@ -66,16 +59,31 @@ impl FullContext {
     }
 
     /// Given a 1-indexed line number, returns a position at the end of the line
-    pub(crate) fn end_of_line(&self, line: usize) -> Position {
-        Position::new(
-            line,
-            util::end_of_line(
-                self.get_start_position().subposition(line, 1).line,
-                self.get_line_starts(),
-                self.contents.as_str().borrow(),
-            )
-            .column,
-        )
+    pub(crate) fn end_of_line(&self, line: usize, kind: PositionKind) -> Position {
+        let (line, col) = match kind {
+            PositionKind::Absolute => (
+                line,
+                util::end_of_line(
+                    line,
+                    self.get_line_starts(),
+                    self.contents.as_str().borrow(),
+                )
+                .column,
+            ),
+            PositionKind::Relative => {
+                let line = self.get_start_position().subposition(line, 1).line;
+                (
+                    line,
+                    util::end_of_line(
+                        line,
+                        self.get_line_starts(),
+                        self.contents.as_str().borrow(),
+                    )
+                    .column,
+                )
+            }
+        };
+        Position::abs(line, col)
     }
 
     #[cfg(feature = "full-context")]
@@ -85,15 +93,23 @@ impl FullContext {
         let end_byte = util::to_byte_index(&end, &self.line_starts, false);
         start_byte..=end_byte
     }
-    
-    pub(crate) fn line_range(&self, line: usize) -> std::ops::RangeInclusive<Position> {
-        Position::new(line, 1)..=self.end_of_line(line)
+
+    pub(crate) fn line_range(
+        &self,
+        line: usize,
+        kind: PositionKind,
+    ) -> std::ops::RangeInclusive<Position> {
+        let start = match kind {
+            PositionKind::Absolute => Position::abs(line, 1),
+            PositionKind::Relative => Position::rel(line, 1),
+        };
+        start..=self.end_of_line(line, kind)
     }
 
     /// Creates a new context from the given file name and string
     pub fn from(file_name: Option<String>, contents: String) -> Self {
         let line_starts = util::line_starts(&contents).collect::<Vec<usize>>();
-        let start = Position::new(1, 1);
+        let start = Position::abs(1, 1);
         let end = util::end_of_line(line_starts.len(), &line_starts, &contents);
         Self::new_with_line_starts(
             file_name,
@@ -125,7 +141,7 @@ impl FullContext {
         let end = util::to_byte_index(&self.end_position, &self.line_starts, true);
         start..end
     }
-    
+
     /// Gets a reference to the contents of this context
     pub fn get_contents(&self) -> &str {
         let start = util::to_byte_index(&self.start_position, &self.line_starts, false);
@@ -157,12 +173,18 @@ impl FullContext {
     ) -> Self {
         let contents = self.contents.clone();
         let line_starts = self.line_starts.clone();
-        let start_position = self
-            .start_position
-            .subposition(start_position.line, start_position.column);
-        let end_position = self
-            .start_position
-            .subposition(end_position.line, end_position.column);
+        let start_position = match start_position.kind {
+            PositionKind::Absolute => start_position,
+            PositionKind::Relative => self
+                .start_position
+                .subposition(start_position.line, start_position.column),
+        };
+        let end_position = match end_position.kind {
+            PositionKind::Absolute => end_position,
+            PositionKind::Relative => self
+                .start_position
+                .subposition(end_position.line, end_position.column),
+        };
         Self::new_with_line_starts(
             self.file_name.clone(),
             start_position,
@@ -181,36 +203,41 @@ pub trait SubContextRange {
     fn into(self, context: &FullContext) -> RangeInclusive<Position>;
 }
 
-fn bound_to_position(
-    ctx: &FullContext,
-    pos: Bound<&Position>,
-    start: bool,
-) -> Position {
-    match pos {
-        Bound::Included(p) => *p,
+fn bound_to_position(ctx: &FullContext, pos: Bound<&Position>, start: bool) -> Position {
+    let ret = match pos {
+        Bound::Included(p) => match p.kind {
+            PositionKind::Absolute => *p,
+            PositionKind::Relative => ctx.get_start_position().subposition(p.line, p.column),
+        },
         Bound::Excluded(p) => {
-            if p.column <= 1 {
-                if p.line <= 1 {
-                    panic!("Bound position out of bounds");
-                } else {
-                    let line = p.line - 1;
-                    let col = ctx.end_of_line(line).column;
-                    Position::new(line, col)
+            let abs = match p.kind {
+                PositionKind::Absolute => *p,
+                PositionKind::Relative => ctx.get_start_position().subposition(p.line, p.column),
+            };
+
+            if abs.column > 1 {
+                Position {
+                    column: abs.column - 1,
+                    ..abs
                 }
+            } else if abs.line > 1 {
+                let line = p.line - 1;
+                let col = ctx.end_of_line(line, PositionKind::Absolute).column;
+                Position::abs(line, col)
             } else {
-                Position::new(p.line, p.column - 1)
+                panic!("Tried to take exclusive range ending at: {:?}", abs);
             }
         }
         Bound::Unbounded => {
             if start {
-                Position::new(1, 1)
+                *ctx.get_start_position()
             } else {
-                let line = ctx.get_end_position().line - ctx.get_start_position().line + 1;
-                let col = ctx.get_end_position().column;
-                Position::new(line, col)
+                *ctx.get_end_position()
             }
         }
-    }
+    };
+    assert_eq!(ret.kind, PositionKind::Absolute);
+    ret
 }
 
 impl<T> SubContextRange for T
@@ -226,8 +253,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::Position;
     use super::FullContext;
+    use super::Position;
 
     #[test]
     fn test_construction() {
@@ -235,8 +262,8 @@ mod tests {
         let c = FullContext::from(None, owned);
         assert_eq!(c.get_contents(), "hello");
         assert_eq!(*c.get_file_name(), None);
-        assert_eq!(*c.get_start_position(), Position::new(1, 1));
-        assert_eq!(*c.get_end_position(), Position::new(1, 5));
+        assert_eq!(*c.get_start_position(), Position::abs(1, 1));
+        assert_eq!(*c.get_end_position(), Position::abs(1, 5));
     }
 
     #[test]
@@ -245,13 +272,13 @@ mod tests {
         let c = FullContext::from(None, owned);
         assert_eq!(c.get_contents(), "Hail Eris");
         assert_eq!(*c.get_file_name(), None);
-        assert_eq!(*c.get_start_position(), Position::new(1, 1));
-        assert_eq!(*c.get_end_position(), Position::new(1, 9));
+        assert_eq!(*c.get_start_position(), Position::abs(1, 1));
+        assert_eq!(*c.get_end_position(), Position::abs(1, 9));
 
-        let sub = c.subcontext(Position::new(1, 6)..=Position::new(1, 9));
+        let sub = c.subcontext(Position::rel(1, 6)..=Position::rel(1, 9));
         assert_eq!(sub.get_contents(), "Eris");
         assert_eq!(*sub.get_file_name(), None);
-        assert_eq!(*sub.get_start_position(), Position::new(1, 6));
-        assert_eq!(*sub.get_end_position(), Position::new(1, 9));
+        assert_eq!(*sub.get_start_position(), Position::abs(1, 6));
+        assert_eq!(*sub.get_end_position(), Position::abs(1, 9));
     }
 }

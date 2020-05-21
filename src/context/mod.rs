@@ -1,5 +1,6 @@
 mod position;
 pub use position::Position;
+pub use position::PositionKind;
 
 mod full_context;
 pub use full_context::FullContext;

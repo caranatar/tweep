@@ -2,13 +2,14 @@
 use crate::CodeMap;
 #[cfg(feature = "full-context")]
 use crate::ContextErrorList;
-use crate::Position;
 use crate::Error;
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
 use crate::Passage;
 use crate::PassageContent;
+use crate::Position;
+use crate::PositionKind;
 use crate::Warning;
 use crate::WarningType;
 #[cfg(feature = "full-context")]
@@ -281,10 +282,8 @@ impl StoryPassages {
         match (&self.data, &other.data) {
             (None, Some(_)) => self.data = other.data,
             (Some(self_data), Some(other_data)) => {
-                let mut warning = Warning::new(
-                    WarningType::DuplicateStoryData,
-                    other_data.context.clone(),
-                );
+                let mut warning =
+                    Warning::new(WarningType::DuplicateStoryData, other_data.context.clone());
                 warning.set_referent(self_data.context.clone());
                 warnings.push(warning);
             }
@@ -433,14 +432,14 @@ impl StoryPassages {
         iter.next();
 
         // The starting position of the current passage
-        let mut start = Position::new(1, 1);
+        let mut start = Position::rel(1, 1);
 
         let end_line = context.get_end_position().line;
         while start.line <= end_line {
             let subcontext_start = start;
             let subcontext_end =
                 if let Some((i, _)) = iter.find(|&(_, line)| line.trim_start().starts_with("::")) {
-                    context.end_of_line(i)
+                    context.end_of_line(i, PositionKind::Relative)
                 } else {
                     *context.get_end_position()
                 };
@@ -452,7 +451,7 @@ impl StoryPassages {
             warnings.append(&mut passage_warnings);
 
             // Update the start position
-            start = Position::new(next_line, 1);
+            start = Position::rel(next_line, 1);
 
             // If there's an error, update the row before returning
             if res.is_err() {
@@ -559,7 +558,7 @@ Test Story
         assert_eq!(warnings[0], {
             let warning = Warning::new(
                 WarningType::EscapedOpenSquare,
-                context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
+                context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
             );
             warning
         });
@@ -604,7 +603,7 @@ Test Story
             assert_eq!(warnings[0], {
                 let warning = Warning::new(
                     WarningType::EscapedOpenSquare,
-                    context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
+                    context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
                 );
                 warning
             });
@@ -675,7 +674,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
+                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
             );
             warning
         }));
@@ -684,7 +683,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
+                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
             );
             warning
         }));
@@ -749,7 +748,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
+                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
             );
             warning
         }));
@@ -758,7 +757,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
+                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
             );
             warning
         }));
@@ -858,7 +857,7 @@ Link to [[A passage]]
             warnings[0],
             Warning::new(
                 WarningType::DuplicateStoryData,
-                context.subcontext(Position::new(15, 1)..)
+                context.subcontext(Position::rel(15, 1)..)
             )
             .with_referent(story.data.as_ref().unwrap().context.clone())
         );
@@ -909,7 +908,7 @@ Discarded Duplicate Title
             warnings[0],
             Warning::new(
                 WarningType::DuplicateStoryTitle,
-                context.subcontext(Position::new(15, 1)..)
+                context.subcontext(Position::rel(15, 1)..)
             )
             .with_referent(story.title.as_ref().unwrap().context.clone())
         );
@@ -983,7 +982,7 @@ Test Story
         #[allow(unused_mut)]
         let expected = vec![Warning::new(
             WarningType::DeadLink("Dead link".to_string()),
-            context.subcontext(Position::new(5, 23)..=Position::new(5,35))
+            context.subcontext(Position::rel(5, 23)..=Position::rel(5, 35)),
         )];
         assert_eq!(warnings, expected);
     }
@@ -1073,7 +1072,7 @@ Test Story
             warnings,
             vec![Warning::new(
                 WarningType::DeadStartPassage("Alternate Start".to_string()),
-                context.subcontext(Position::new(10, 1)..)
+                context.subcontext(Position::rel(10, 1)..)
             )]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));

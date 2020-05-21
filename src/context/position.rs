@@ -1,3 +1,9 @@
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PositionKind {
+    Absolute,
+    Relative,
+}
+
 /// One-indexed, line and column numbers to be used within a [`Context`]
 ///
 /// # Examples
@@ -15,6 +21,9 @@ pub struct Position {
 
     /// The one-indexed column number
     pub column: usize,
+
+    /// Kind of position
+    pub kind: PositionKind,
 }
 
 impl Position {
@@ -27,8 +36,18 @@ impl Position {
     /// let c = Position::new(1, 3);
     /// assert_eq!((c.line, c.column), (1, 3));
     /// ```
-    pub fn new(line: usize, column: usize) -> Self {
-        Position { line, column }
+    // pub(crate) fn new(line: usize, column: usize, kind: PositionKind) -> Self {
+    //     Position { line, column, kind }
+    // }
+
+    /// Create a new absolute `Position`
+    pub fn abs(line: usize, column: usize) -> Self {
+        Position { line, column, kind: PositionKind::Absolute }
+    }
+
+    /// Create a new relative `Position`
+    pub fn rel(line: usize, column: usize) -> Self {
+        Position { line, column, kind: PositionKind::Relative }
     }
 
     /// Creates another `Position` using one-indexed line and column
@@ -67,7 +86,7 @@ impl Position {
             column
         };
         let line = self.line + line - 1;
-        Self { line, column }
+        Self { line, column, kind: self.kind }
     }
 }
 
@@ -80,15 +99,19 @@ impl std::fmt::Display for Position {
 #[cfg(test)]
 mod tests {
     use super::Position;
+    use super::PositionKind;
 
     #[test]
     fn subpositions() {
-        let p = Position { line: 2, column: 3 };
+        let p = Position { line: 2, column: 3, kind: PositionKind::Absolute };
         let sub = p.subposition(1, 1);
         assert_eq!(sub, p);
         let sub = p.subposition(1, 5);
-        assert_eq!(sub, Position { line: 2, column: 7 });
+        assert_eq!(sub, Position { line: 2, column: 7, kind: PositionKind::Absolute });
         let sub = p.subposition(4, 5);
-        assert_eq!(sub, Position { line: 5, column: 5 });
+        assert_eq!(sub, Position { line: 5, column: 5, kind: PositionKind::Absolute });
+        let p = Position { kind: PositionKind::Relative, ..p };
+        let sub = p.subposition(1, 1);
+        assert_eq!(sub, p);
     }
 }

@@ -1,7 +1,7 @@
-use crate::Position;
 use crate::ErrorList;
 use crate::FullContext;
 use crate::Output;
+use crate::Position;
 use crate::Warning;
 use crate::WarningType;
 use std::collections::HashMap;
@@ -63,8 +63,8 @@ impl StoryData {
             warnings.push(Warning::new(
                 WarningType::JsonError(err_string),
                 context.subcontext(
-                    Position::new(err.line(), err.column())
-                        ..=Position::new(err.line(), err.column()),
+                    Position::rel(err.line(), err.column())
+                        ..=Position::rel(err.line(), err.column()),
                 ),
             ));
             None

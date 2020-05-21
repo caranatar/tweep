@@ -271,7 +271,7 @@ Test Story
         assert_eq!(warnings[0], {
             let warning = Warning::new(
                 WarningType::EscapedOpenSquare,
-                context.subcontext(Position::new(7, 5)..=Position::new(7, 6)),
+                context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
             );
             warning
         });
@@ -405,7 +405,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedOpenCurly,
-                context.subcontext(Position::new(10, 6)..=Position::new(10, 7)),
+                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
             );
             warning
         }));
@@ -414,7 +414,7 @@ blah blah
         assert!(warnings.contains(&{
             let warning = Warning::new(
                 WarningType::EscapedCloseSquare,
-                context.subcontext(Position::new(9, 16)..=Position::new(9, 17)),
+                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
             );
             warning
         }));

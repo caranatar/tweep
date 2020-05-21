@@ -48,7 +48,7 @@ mod tests {
         let c = FullContext::from(None, contents);
         let partial: PartialContext = c.into();
         assert_eq!(*partial.get_file_name(), None);
-        assert_eq!(*partial.get_start_position(), Position::new(1, 1));
+        assert_eq!(*partial.get_start_position(), Position::abs(1, 1));
     }
 
     #[test]
@@ -56,9 +56,9 @@ mod tests {
         let name = "name.ext".to_string();
         let contents = "hail eris".to_string();
         let c = FullContext::from(Some(name), contents);
-        let sub = c.subcontext(Position::new(1, 6)..=Position::new(2, 3));
+        let sub = c.subcontext(Position::rel(1, 6)..=Position::rel(2, 3));
         let partial: PartialContext = sub.into();
         assert_eq!(*partial.get_file_name(), Some("name.ext".to_string()));
-        assert_eq!(*partial.get_start_position(), Position::new(1, 6));
+        assert_eq!(*partial.get_start_position(), Position::abs(1, 6));
     }
 }

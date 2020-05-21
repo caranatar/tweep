@@ -1,14 +1,15 @@
 use crate::ErrorList;
+use crate::FullContext;
 use crate::Output;
 use crate::PassageContent;
 use crate::PassageHeader;
+use crate::Position;
+use crate::PositionKind;
 use crate::ScriptContent;
 use crate::StoryData;
 use crate::StoryTitle;
 use crate::StylesheetContent;
 use crate::TwineContent;
-use crate::FullContext;
-use crate::Position;
 
 /// A complete Twee passage, including header and content
 ///
@@ -20,6 +21,7 @@ use crate::Position;
 ///
 /// [`PassageHeader`]: struct.PassageHeader.html
 /// [`PassageContent`]: enum.PassageContent.html
+#[derive(Debug)]
 pub struct Passage {
     /// The header
     pub header: PassageHeader,
@@ -72,7 +74,11 @@ impl Passage {
             Ok(_) => {
                 let header = header_res.ok().unwrap();
                 let content = content_res.ok().unwrap();
-                Ok(Passage { header, content, context })
+                Ok(Passage {
+                    header,
+                    content,
+                    context,
+                })
             }
         })
         .with_warnings(warnings)
@@ -89,7 +95,7 @@ impl Passage {
     }
 
     pub(crate) fn parse(context: FullContext) -> Output<Result<Self, ErrorList>> {
-        let header_context = context.subcontext(context.line_range(1));
+        let header_context = context.subcontext(..=context.end_of_line(1, PositionKind::Relative));
         // Parse the first line as the header
         let header = PassageHeader::parse(header_context);
 
@@ -109,7 +115,8 @@ impl Passage {
         let len = new_iter.fold(0, |acc, _| acc + 1);
 
         // Create the content's context
-        let content_context = context.subcontext(Position::new(2,1)..=context.end_of_line(len+1));
+        let content_context = context
+            .subcontext(Position::rel(2, 1)..=context.end_of_line(len + 1, PositionKind::Relative));
 
         // Parse the content based on the type indicated by the header
         let content: Output<Result<PassageContent, ErrorList>>;
@@ -162,7 +169,7 @@ mod tests {
         let input = "::StoryTitle\nMulti\nLine\nTitle".to_string();
         story_title_subtest(input, "Multi\nLine\nTitle")
     }
-    
+
     #[test]
     fn script_passage() {
         let input = ":: Script Passage [script]\nfoo\nbar".to_string();
@@ -214,7 +221,8 @@ That
 
 
 
-"#.to_string();
+"#
+        .to_string();
         let context = FullContext::from(None, input_string);
         let out = Passage::parse(context);
         assert_eq!(out.has_warnings(), false);
