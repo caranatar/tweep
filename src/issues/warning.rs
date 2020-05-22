@@ -73,7 +73,7 @@ impl Warning {
     ///     .with_referent(referent.clone());
     /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
-    pub fn get_referent(&self) -> Option<&FullContext> {
+    pub fn get_referent(&self) -> Option<&Context> {
         self.referent.as_ref()
     }
 
@@ -88,8 +88,8 @@ impl Warning {
     /// warning.set_referent(referent.clone());
     /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
-    pub fn set_referent(&mut self, referent: FullContext) {
-        self.referent = Some(referent);
+    pub fn set_referent<T: Into<Context>>(&mut self, referent: T) {
+        self.referent = Some(referent.into());
     }
 
     /// Moves the object, sets the referent to the given `Position`, and returns
@@ -104,8 +104,8 @@ impl Warning {
     ///     .with_referent(referent.clone());
     /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
-    pub fn with_referent(mut self, referent: FullContext) -> Self {
-        self.set_referent(referent);
+    pub fn with_referent<T: Into<Context>>(mut self, referent: T) -> Self {
+        self.set_referent(referent.into());
         self
     }
 }
@@ -135,6 +135,7 @@ impl std::fmt::Display for Warning {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::FullContext;
 
     #[test]
     fn incremental() {
@@ -146,7 +147,7 @@ mod tests {
         let ref_context = FullContext::from(None, "foo bar".to_string());
         warning.set_referent(ref_context.clone());
         assert!(warning.has_referent());
-        assert_eq!(warning.get_referent(), Some(&ref_context));
+        assert_eq!(warning.get_referent(), Some(&ref_context.into()));
     }
 
     #[test]
@@ -156,7 +157,7 @@ mod tests {
         let warning = Warning::new(WarningKind::UnclosedLink, Some(context))
             .with_referent(ref_context.clone());
         // Prove changing the Warning's Position doesn't change the referent
-        assert_eq!(warning.get_referent(), Some(&ref_context));
+        assert_eq!(warning.get_referent(), Some(&ref_context.into()));
     }
 
     #[test]
