@@ -127,6 +127,9 @@ pub type Context = FullContext;
 /// [`Warning`]: struct.Warning.html
 /// [`FullContext`]: struct.FullContext.html
 /// [`PartialContext`]: struct.PartialContext.html
+#[cfg(not(feature = "full-context"))]
+pub type Context = PartialContext;
+
 mod context;
 pub use context::Position;
 pub use context::PositionKind;

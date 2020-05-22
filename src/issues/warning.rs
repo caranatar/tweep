@@ -1,5 +1,5 @@
-use crate::FullContext;
 use crate::WarningType;
+use crate::Context;
 
 /// A warning with a [`WarningKind`], [`Position`], and optionally a reference
 /// to another [`Position`]
@@ -22,10 +22,10 @@ pub struct Warning {
     pub warning_type: WarningType,
 
     /// The context of this Warning
-    pub context: Option<FullContext>,
+    pub context: Option<Context>,
 
     /// The location referenced by this warning
-    pub referent: Option<FullContext>,
+    pub referent: Option<Context>,
 }
 
 impl Warning {

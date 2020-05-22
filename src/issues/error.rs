@@ -1,5 +1,5 @@
 use crate::ErrorType;
-use crate::FullContext;
+use crate::Context;
 
 /// An error with an owned [`ErrorKind`] and [`Position`]
 ///
@@ -11,7 +11,7 @@ pub struct Error {
     pub error_type: ErrorType,
 
     /// The context of the error
-    pub context: Option<FullContext>,
+    pub context: Option<Context>,
 }
 
 impl Error {

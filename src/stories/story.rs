@@ -237,6 +237,7 @@ impl std::convert::From<StoryPassages> for Story {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Context;
     use crate::Warning;
     use crate::WarningType;
     use tempfile::tempdir;

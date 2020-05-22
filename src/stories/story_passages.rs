@@ -1,5 +1,6 @@
 #[cfg(feature = "full-context")]
 use crate::CodeMap;
+use crate::Context;
 #[cfg(feature = "full-context")]
 use crate::ContextErrorList;
 use crate::Error;
