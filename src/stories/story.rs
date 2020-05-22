@@ -217,7 +217,8 @@ impl std::convert::From<StoryPassages> for Story {
             })
             .collect();
 
-        let passages:HashMap<String, TwinePassage> = s.passages.drain().map(|(k, v)| (k, v.into())).collect();
+        let passages: HashMap<String, TwinePassage> =
+            s.passages.drain().map(|(k, v)| (k, v.into())).collect();
 
         #[cfg(feature = "full-context")]
         let code_map = s.code_map;
@@ -262,8 +263,8 @@ Test Story
 
 "#
         .to_string();
-        use crate::Position;
         use crate::FullContext;
+        use crate::Position;
         let out = Story::from_string(input.clone());
         assert_eq!(out.has_warnings(), true);
         let (res, warnings) = out.take();
@@ -400,8 +401,8 @@ blah blah
         assert_eq!(story.title, Some("Test Story".to_string()));
         assert_eq!(story.get_start_passage_name(), Some("Start"));
 
-        use crate::Position;
         use crate::FullContext;
+        use crate::Position;
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
             let warning = Warning::new(
