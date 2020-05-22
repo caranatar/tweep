@@ -26,11 +26,11 @@ impl ErrorList {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType, FullContext};
+    /// use tweep::{Error, ErrorList, ErrorKind, FullContext};
     /// let mut errors = ErrorList::default();
     /// let context = FullContext::from(None, "::".to_string());
-    /// errors.push(Error::new(ErrorType::EmptyName, context.clone()));
-    /// # assert_eq!(errors.errors, vec![ Error::new(ErrorType::EmptyName, context.clone()) ]);
+    /// errors.push(Error::new(ErrorKind::EmptyName, Some(context.clone())));
+    /// # assert_eq!(errors.errors, vec![ Error::new(ErrorKind::EmptyName, Some(context.clone())) ]);
     /// ```
     pub fn push(&mut self, error: Error) {
         self.errors.push(error);
@@ -69,30 +69,30 @@ impl ErrorList {
     /// When given one `Ok` and one `Err`, the output will have the same list of
     /// errors as the `Err` variant:
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType, FullContext, Position};
+    /// use tweep::{Error, ErrorList, ErrorKind, FullContext, Position};
     /// let mut left:Result<u8, ErrorList> = Ok(5);
     /// let right_context = FullContext::from(None, "::".to_string());
     /// let mut right:Result<&str, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::EmptyName, right_context.clone()) ],
+    ///     errors: vec![ Error::new(ErrorKind::EmptyName, Some(right_context.clone())) ],
     /// });
     /// let merged = ErrorList::merge(&mut left, &mut right);
-    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName, right_context.clone()) ]);
+    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorKind::EmptyName, Some(right_context.clone())) ]);
     /// ```
     ///
     /// When given two `Err` variants, the output will be have an `ErrorList`
     /// that contains the errors in `right` appended to the errors in `left`
     /// ```
-    /// use tweep::{Error, ErrorList, ErrorType, FullContext, Position};
+    /// use tweep::{Error, ErrorList, ErrorKind, FullContext, Position};
     /// let left_context = FullContext::from(None, "::".to_string());
     /// let mut left:Result<u8, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::EmptyName, left_context.clone()) ],
+    ///     errors: vec![ Error::new(ErrorKind::EmptyName, Some(left_context.clone())) ],
     /// });
     /// let right_context = FullContext::from(None, " :: Blah".to_string());
     /// let mut right:Result<&str, ErrorList> = Err(ErrorList {
-    ///     errors: vec![ Error::new(ErrorType::LeadingWhitespace, right_context.clone()) ],
+    ///     errors: vec![ Error::new(ErrorKind::LeadingWhitespace, Some(right_context.clone())) ],
     /// });
     /// let merged = ErrorList::merge(&mut left, &mut right);
-    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorType::EmptyName, left_context.clone()), Error::new(ErrorType::LeadingWhitespace, right_context.clone()) ]);
+    /// assert_eq!(merged.err().unwrap().errors, vec![ Error::new(ErrorKind::EmptyName, Some(left_context.clone())), Error::new(ErrorKind::LeadingWhitespace, Some(right_context.clone())) ]);
     /// ```
     pub fn merge<T, U>(
         left: &mut Result<T, ErrorList>,

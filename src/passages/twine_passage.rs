@@ -15,6 +15,18 @@ pub struct TwinePassage {
     pub content: TwineContent,
 }
 
+impl TwinePassage {
+    /// Returns a reference to the metadata contained by the `header` field
+    pub fn metadata(&self) -> &serde_json::Map<String, serde_json::Value> {
+        &self.header.metadata
+    }
+
+    /// Returns a reference to the list of tags contained by the `header` field
+    pub fn tags(&self) -> &Vec<String> {
+        &self.header.tags
+    }
+}
+
 impl std::convert::From<Passage> for TwinePassage {
     fn from(passage: Passage) -> Self {
         let header = passage.header;

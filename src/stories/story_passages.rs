@@ -308,11 +308,11 @@ impl StoryPassages {
     /// * [`DeadStartPassage`] - Alternate start passage set in `StoryData`, but
     ///   no such passage found in parsing
     ///
-    /// [`MissingStoryTitle`]: enum.WarningType.html#variant.MissingStoryTitle
-    /// [`MissingStoryData`]: enum.WarningType.html#variant.MissingStoryData
-    /// [`DeadLink`]: enum.WarningType.html#variant.DeadLink
-    /// [`MissingStartPassage`]: enum.WarningType.html#variant.MissingStartPassage
-    /// [`DeadStartPassage`]: enum.WarningType.html#variant.DeadStartPassage
+    /// [`MissingStoryTitle`]: enum.WarningKind.html#variant.MissingStoryTitle
+    /// [`MissingStoryData`]: enum.WarningKind.html#variant.MissingStoryData
+    /// [`DeadLink`]: enum.WarningKind.html#variant.DeadLink
+    /// [`MissingStartPassage`]: enum.WarningKind.html#variant.MissingStartPassage
+    /// [`DeadStartPassage`]: enum.WarningKind.html#variant.DeadStartPassage
     pub fn check(&self) -> Vec<Warning> {
         let mut warnings = Vec::new();
         if self.title.is_none() {

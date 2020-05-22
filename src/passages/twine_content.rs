@@ -36,14 +36,11 @@ use crate::WarningType;
 ///"#.to_string();
 /// let out = TwineContent::parse(FullContext::from(None, input));
 /// # assert!(!out.has_warnings());
-/// # assert_eq!(out.get_output().as_ref().ok().unwrap().get_links(), vec![
-///    TwineLink { target: "link".to_string(), position: Position::RowColumn(1, 43), #[cfg(feature = "full-context")] context_len: 8 },
-/// #   TwineLink { target: "Another passage".to_string(), position: Position::RowColumn(2, 10), #[cfg(feature = "full-context")] context_len: 31 }]);
 /// ```
 ///
 /// [`Position`]: enum.Position.html
-/// [`UnclosedLink`]: enum.WarningType.html#variant.UnclosedLink
-/// [`WhitespaceInLink`]: enum.WarningType.html#variant.WhitespaceInLink
+/// [`UnclosedLink`]: enum.WarningKind.html#variant.UnclosedLink
+/// [`WhitespaceInLink`]: enum.WarningKind.html#variant.WhitespaceInLink
 #[derive(Debug)]
 pub struct TwineContent {
     /// The content of the passage

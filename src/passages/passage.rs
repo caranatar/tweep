@@ -44,11 +44,12 @@ impl Passage {
     /// # Examples
     /// ```
     /// # use tweep::{FullContext, Passage, PassageHeader, PassageContent, StoryTitle};
-    /// let context = FullContext::from(None, ":: StoryTitle".to_string());
+    /// # let passage_context = FullContext::from(None, ":: StoryTitle\nA title".to_string());
+    /// # let context = FullContext::from(None, ":: StoryTitle".to_string());
     /// let header = PassageHeader::parse(context);
-    /// let context = FullContext::from(None, "A title".to_string());
+    /// # let context = FullContext::from(None, "A title".to_string());
     /// let content = StoryTitle::parse(context);
-    /// let passage = Passage::new(header, content.into_result());
+    /// let passage = Passage::new(header, content.into_result(), passage_context);
     /// assert!(passage.is_ok());
     /// ```
     pub fn new(

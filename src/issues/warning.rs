@@ -1,18 +1,20 @@
 use crate::FullContext;
 use crate::WarningType;
 
-/// A warning with a [`WarningType`], [`Position`], and optionally a reference
+/// A warning with a [`WarningKind`], [`Position`], and optionally a reference
 /// to another [`Position`]
 ///
 /// # Examples
 /// ```
-/// use tweep::{Position, Warning, WarningType};
-/// let warning = Warning::new(WarningType::DuplicateStoryTitle)
-///     .with_referent(Position::RowColumn(5, 0));
+/// use tweep::{FullContext, Warning, WarningKind};
+/// # let context = FullContext::from(None, String::new());
+/// # let referent = FullContext::from(None, String::new());
+/// let warning = Warning::new(WarningKind::DuplicateStoryTitle, Some(context))
+///     .with_referent(referent);
 /// # assert!(warning.has_referent());
 /// ```
 ///
-/// [`WarningType`]: enum.WarningType.html
+/// [`WarningKind`]: enum.WarningKind.html
 /// [`Position`]: enum.Position.html
 #[derive(Debug, Eq, PartialEq)]
 pub struct Warning {
@@ -31,10 +33,10 @@ impl Warning {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Warning, WarningType};
-    /// let warning = Warning::new(WarningType::MissingStartPassage);
+    /// use tweep::{FullContext, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
+    /// let warning = Warning::new(WarningKind::MissingStartPassage, Some(context));
     /// # assert!(!warning.has_referent());
-    /// # assert_eq!(warning.position, tweep::Position::StoryLevel);
     /// ```
     pub fn new<T: Into<Option<FullContext>>>(warning_type: WarningType, context: T) -> Self {
         Warning {
@@ -48,10 +50,12 @@ impl Warning {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Position, Warning, WarningType};
-    /// let mut warning = Warning::new(WarningType::UnclosedLink);
+    /// use tweep::{FullContext, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
+    /// let mut warning = Warning::new(WarningKind::UnclosedLink, Some(context));
     /// assert!(!warning.has_referent());
-    /// warning.set_referent(Position::RowColumn(23, 5));
+    /// # let referent = FullContext::from(None, String::new());
+    /// warning.set_referent(referent);
     /// assert!(warning.has_referent());
     /// ```
     pub fn has_referent(&self) -> bool {
@@ -62,10 +66,12 @@ impl Warning {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Position, Warning, WarningType};
-    /// let warning = Warning::new(WarningType::DuplicateStoryTitle)
-    ///     .with_referent(Position::RowColumn(5, 0));
-    /// assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5, 0)));
+    /// # use tweep::{Context, FullContext, Warning, WarningKind};
+    /// # let context:Context = FullContext::from(None, String::new()).into();
+    /// # let referent = context.clone();
+    /// let warning = Warning::new(WarningKind::DuplicateStoryTitle, Some(context))
+    ///     .with_referent(referent.clone());
+    /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
     pub fn get_referent(&self) -> Option<&FullContext> {
         self.referent.as_ref()
@@ -75,12 +81,12 @@ impl Warning {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Position, Warning, WarningType};
-    /// let mut warning = Warning::new(WarningType::UnclosedLink);
-    /// assert!(!warning.has_referent());
-    /// warning.set_referent(Position::RowColumn(23, 5));
-    /// assert!(warning.has_referent());
-    /// assert_eq!(warning.get_referent(), Some(&Position::RowColumn(23, 5)));
+    /// # use tweep::{Context, FullContext, Warning, WarningKind};
+    /// # let context:Context = FullContext::from(None, String::new()).into();
+    /// # let referent = context.clone();
+    /// let mut warning = Warning::new(WarningKind::DuplicateStoryTitle, Some(context));
+    /// warning.set_referent(referent.clone());
+    /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
     pub fn set_referent(&mut self, referent: FullContext) {
         self.referent = Some(referent);
@@ -91,10 +97,12 @@ impl Warning {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Position, Warning, WarningType};
-    /// let warning = Warning::new(WarningType::DuplicateStoryTitle)
-    ///     .with_referent(Position::RowColumn(5, 0));
-    /// # assert_eq!(warning.get_referent(), Some(&Position::RowColumn(5, 0)));
+    /// # use tweep::{Context, FullContext, Warning, WarningKind};
+    /// # let context:Context = FullContext::from(None, String::new()).into();
+    /// # let referent = context.clone();
+    /// let warning = Warning::new(WarningKind::DuplicateStoryTitle, Some(context))
+    ///     .with_referent(referent.clone());
+    /// assert_eq!(warning.get_referent(), Some(&referent));
     /// ```
     pub fn with_referent(mut self, referent: FullContext) -> Self {
         self.set_referent(referent);
@@ -104,7 +112,7 @@ impl Warning {
 
 #[cfg(feature = "warning-names")]
 impl Warning {
-    /// Gets a string representation of a `Warning`'s `WarningType` variant name
+    /// Gets a string representation of a `Warning`'s `WarningKind` variant name
     ///
     /// Enabled with "warning-names" feature
     pub fn get_name(&self) -> &str {

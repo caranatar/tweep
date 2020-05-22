@@ -47,7 +47,7 @@ pub enum WarningType {
 
 #[cfg(feature = "warning-names")]
 impl WarningType {
-    /// Gets a string representation of a `WarningType` variant's name
+    /// Gets a string representation of a `WarningKind` variant's name
     ///
     /// Enabled with "warning-names" feature
     pub fn get_name(&self) -> &str {

@@ -40,20 +40,20 @@ use serde_json::json;
 /// ```
 ///
 /// [`Position`]: enum.Position.html
-/// [`LeadingWhitespace`]: enum.ErrorType.html#variant.LeadingWhitespace
-/// [`MissingSigil`]: enum.ErrorType.html#variant.MissingSigil
-/// [`MetadataBeforeTags`]: enum.ErrorType.html#variant.MetadataBeforeTags
-/// [`UnclosedTagBlock`]: enum.ErrorType.html#variant.UnclosedTagBlock
-/// [`UnescapedOpenCurly`]: enum.ErrorType.html#variant.UnescapedOpenCurly
-/// [`UnescapedCloseCurly`]: enum.ErrorType.html#variant.UnescapedCloseCurly
-/// [`UnescapedOpenSquare`]: enum.ErrorType.html#variant.UnescapedOpenSquare
-/// [`UnescapedCloseSquare`]: enum.ErrorType.html#variant.UnescapedCloseSquare
-/// [`EmptyName`]: enum.ErrorType.html#variant.EmptyName
-/// [`JsonError`]: enum.WarningType.html#variant.JsonError
-/// [`EscapedOpenCurly`]: enum.WarningType.html#variant.EscapedOpenCurly
-/// [`EscapedCloseCurly`]: enum.WarningType.html#variant.EscapedCloseCurly
-/// [`EscapedOpenSquare`]: enum.WarningType.html#variant.EscapedOpenSquare
-/// [`EscapedCloseSquare`]: enum.WarningType.html#variant.EscapedCloseSquare
+/// [`LeadingWhitespace`]: enum.ErrorKind.html#variant.LeadingWhitespace
+/// [`MissingSigil`]: enum.ErrorKind.html#variant.MissingSigil
+/// [`MetadataBeforeTags`]: enum.ErrorKind.html#variant.MetadataBeforeTags
+/// [`UnclosedTagBlock`]: enum.ErrorKind.html#variant.UnclosedTagBlock
+/// [`UnescapedOpenCurly`]: enum.ErrorKind.html#variant.UnescapedOpenCurly
+/// [`UnescapedCloseCurly`]: enum.ErrorKind.html#variant.UnescapedCloseCurly
+/// [`UnescapedOpenSquare`]: enum.ErrorKind.html#variant.UnescapedOpenSquare
+/// [`UnescapedCloseSquare`]: enum.ErrorKind.html#variant.UnescapedCloseSquare
+/// [`EmptyName`]: enum.ErrorKind.html#variant.EmptyName
+/// [`JsonError`]: enum.WarningKind.html#variant.JsonError
+/// [`EscapedOpenCurly`]: enum.WarningKind.html#variant.EscapedOpenCurly
+/// [`EscapedCloseCurly`]: enum.WarningKind.html#variant.EscapedCloseCurly
+/// [`EscapedOpenSquare`]: enum.WarningKind.html#variant.EscapedOpenSquare
+/// [`EscapedCloseSquare`]: enum.WarningKind.html#variant.EscapedCloseSquare
 #[derive(Debug)]
 pub struct PassageHeader {
     /// The name of the header. This can be a Twine passage name or a special name

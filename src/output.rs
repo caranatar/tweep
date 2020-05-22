@@ -42,8 +42,9 @@ impl<T> Output<T> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Warning, WarningType};
-    /// let warnings = vec![ Warning::new(WarningType::MissingStoryTitle) ];
+    /// use tweep::{FullContext, Output, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
+    /// let warnings = vec![ Warning::new(WarningKind::MissingStoryTitle, Some(context)) ];
     /// let out:Output<u32> = Output::new(23).with_warnings(warnings.clone());
     /// assert!(out.has_warnings());
     /// assert_eq!(*out.get_warnings(), warnings);
@@ -82,11 +83,12 @@ impl<T> Output<T> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Warning, WarningType};
+    /// use tweep::{FullContext, Output, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
     /// let out:Output<u8> = Output::new(5);
     /// assert!(!out.has_warnings());
     /// let out:Output<u8> = Output::new(5)
-    ///     .with_warnings(vec![ Warning::new(WarningType::UnclosedLink) ]);
+    ///     .with_warnings(vec![ Warning::new(WarningKind::UnclosedLink, Some(context)) ]);
     /// assert!(out.has_warnings());
     /// ```
     pub fn has_warnings(&self) -> bool {
@@ -97,10 +99,11 @@ impl<T> Output<T> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Warning, WarningType};
+    /// use tweep::{FullContext, Output, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
     /// let out:Output<u8> = Output::new(5)
-    ///     .with_warnings(vec![ Warning::new(WarningType::UnclosedLink) ]);
-    /// assert_eq!(out.get_warnings(), &vec![ Warning::new(WarningType::UnclosedLink) ]);
+    ///     .with_warnings(vec![ Warning::new(WarningKind::UnclosedLink, Some(context.clone())) ]);
+    /// assert_eq!(out.get_warnings(), &vec![ Warning::new(WarningKind::UnclosedLink, Some(context)) ]);
     /// ```
     pub fn get_warnings(&self) -> &Vec<Warning> {
         &self.warnings
@@ -110,8 +113,9 @@ impl<T> Output<T> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Warning, WarningType};
-    /// let warnings = vec![ Warning::new(WarningType::MissingStoryTitle) ];
+    /// use tweep::{FullContext, Output, Warning, WarningKind};
+    /// # let context = FullContext::from(None, String::new());
+    /// let warnings = vec![ Warning::new(WarningKind::MissingStoryTitle, Some(context.clone())) ];
     /// let out:Output<u32> = Output::new(23).with_warnings(warnings.clone());
     /// let (t, w) = out.take();
     /// assert_eq!(t, 23);
@@ -146,9 +150,9 @@ impl<T,E> Output<Result<T,E>> {
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Output, Error, ErrorType, FullContext};
+    /// use tweep::{Output, Error, ErrorKind, FullContext};
     /// let context = FullContext::from(None, "::".to_string());
-    /// let err = Error::new(ErrorType::EmptyName, context);
+    /// let err = Error::new(ErrorKind::EmptyName, Some(context));
     /// let out:Output<Result<u32, Error>> = Output::new(Err(err));
     /// assert!(out.is_err());
     /// ```

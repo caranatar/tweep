@@ -1,6 +1,10 @@
+/// Indicates absolute/relative position
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PositionKind {
+    /// Absolute position
     Absolute,
+
+    /// Relative position
     Relative,
 }
 
@@ -9,7 +13,7 @@ pub enum PositionKind {
 /// # Examples
 /// ```
 /// # use tweep::Position;
-/// let c = Position::new(1, 3);
+/// let c = Position::abs(1, 3);
 /// assert_eq!((c.line, c.column), (1, 3));
 /// ```
 ///
@@ -27,25 +31,26 @@ pub struct Position {
 }
 
 impl Position {
-    /// Create a new `Position` with the given one-indexed line and
-    /// column numbers.
+    /// Create a new absolute `Position`
     ///
     /// # Examples
     /// ```
     /// # use tweep::Position;
-    /// let c = Position::new(1, 3);
-    /// assert_eq!((c.line, c.column), (1, 3));
+    /// let c = Position::abs(2, 3);
+    /// assert_eq!((c.line, c.column), (2, 3));
     /// ```
-    // pub(crate) fn new(line: usize, column: usize, kind: PositionKind) -> Self {
-    //     Position { line, column, kind }
-    // }
-
-    /// Create a new absolute `Position`
     pub fn abs(line: usize, column: usize) -> Self {
         Position { line, column, kind: PositionKind::Absolute }
     }
 
     /// Create a new relative `Position`
+    ///
+    /// # Examples
+    /// ```
+    /// # use tweep::Position;
+    /// let c = Position::rel(2, 3);
+    /// assert_eq!((c.line, c.column), (2, 3));
+    /// ```
     pub fn rel(line: usize, column: usize) -> Self {
         Position { line, column, kind: PositionKind::Relative }
     }
@@ -56,7 +61,7 @@ impl Position {
     /// # Examples
     /// ```
     /// # use tweep::Position;
-    /// let c = Position::new(2, 3);
+    /// let c = Position::abs(2, 3);
     /// // Since these are 1-indexed, this should be the same as c
     /// let s = c.subposition(1, 1);
     /// assert_eq!(c, s);
@@ -64,20 +69,20 @@ impl Position {
     ///
     /// ```
     /// # use tweep::Position;
-    /// let c = Position::new(2, 3);
+    /// let c = Position::abs(2, 3);
     /// // When the line number is one, the sub position column will be offset
     /// // from the source position column
     /// let s = c.subposition(1, 3);
-    /// assert_eq!(s, Position::new(2, 5));
+    /// assert_eq!(s, Position::abs(2, 5));
     /// ```
     ///
     /// ```
     /// # use tweep::Position;
-    /// let c = Position::new(2, 3);
+    /// let c = Position::abs(2, 3);
     /// // When the line number is greater than one, the column number will be
     /// // offset from the start of that line
     /// let s = c.subposition(2, 1);
-    /// assert_eq!(s, Position::new(3, 1));
+    /// assert_eq!(s, Position::abs(3, 1));
     /// ```
     pub fn subposition(&self, line: usize, column: usize) -> Self {
         let column = if line == 1 {

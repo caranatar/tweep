@@ -103,6 +103,30 @@
 
 #![warn(missing_docs)]
 #![warn(missing_doc_code_examples)]
+
+/// The output context type for [`Error`]s and [`Warning`]s. If the feature
+/// `full-context` is enabled, this will be a [`FullContext`] which will include
+/// the ability to retrieve the associated source Twee v3 code. Otherwise, it
+/// will be a [`PartialContext`] which will only include the file name and a
+/// starting location for the error/warning
+///
+/// [`Error`]: struct.Error.html
+/// [`Warning`]: struct.Warning.html
+/// [`FullContext`]: struct.FullContext.html
+/// [`PartialContext`]: struct.PartialContext.html
+#[cfg(feature = "full-context")]
+pub type Context = FullContext;
+
+/// The output context type for [`Error`]s and [`Warning`]s. If the feature
+/// `full-context` is enabled, this will be a [`FullContext`] which will include
+/// the ability to retrieve the associated source Twee v3 code. Otherwise, it
+/// will be a [`PartialContext`] which will only include the file name and a
+/// starting location for the error/warning
+///
+/// [`Error`]: struct.Error.html
+/// [`Warning`]: struct.Warning.html
+/// [`FullContext`]: struct.FullContext.html
+/// [`PartialContext`]: struct.PartialContext.html
 mod context;
 pub use context::Position;
 pub use context::PositionKind;

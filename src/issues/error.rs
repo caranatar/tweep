@@ -1,9 +1,9 @@
 use crate::ErrorType;
 use crate::FullContext;
 
-/// An error with an owned [`ErrorType`] and [`Position`]
+/// An error with an owned [`ErrorKind`] and [`Position`]
 ///
-/// [`ErrorType`]: enum.ErrorType.html
+/// [`ErrorKind`]: enum.ErrorKind.html
 /// [`Position`]: enum.Position.html
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Error {
@@ -15,19 +15,19 @@ pub struct Error {
 }
 
 impl Error {
-    /// Creates a new `Error` with the given [`ErrorType`] and a default
+    /// Creates a new `Error` with the given [`ErrorKind`] and a default
     /// [`Position`]
     ///
     /// # Examples
     /// ```
-    /// use tweep::{Error, ErrorType};
+    /// use tweep::{Error, ErrorKind};
     /// # use tweep::{FullContext};
     /// # let context = FullContext::from(None, "::".to_string());
-    /// let error = Error::new(ErrorType::EmptyName, context);
-    /// # assert_eq!(error.error_type, ErrorType::EmptyName);
+    /// let error = Error::new(ErrorKind::EmptyName, Some(context));
+    /// # assert_eq!(error.kind, ErrorKind::EmptyName);
     /// ```
     ///
-    /// [`ErrorType`]: enum.ErrorType.html
+    /// [`ErrorKind`]: enum.ErrorKind.html
     /// [`Position`]: struct.Position.html
     pub fn new<T: Into<Option<FullContext>>>(error_type: ErrorType, context: T) -> Self {
         Error {
