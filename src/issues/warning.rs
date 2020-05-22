@@ -16,7 +16,7 @@ use crate::WarningKind;
 ///
 /// [`WarningKind`]: enum.WarningKind.html
 /// [`Position`]: enum.Position.html
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Warning {
     /// The warning type
     pub kind: WarningKind,
