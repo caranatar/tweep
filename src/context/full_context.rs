@@ -88,12 +88,13 @@ impl FullContext {
 
     #[cfg(feature = "full-context")]
     pub(crate) fn line_bytes(&self, line: usize) -> std::ops::RangeInclusive<usize> {
-        let (start, end) = self.line_range(line).into_inner();
+        let (start, end) = self.line_range(line, PositionKind::Absolute).into_inner();
         let start_byte = util::to_byte_index(&start, &self.line_starts, false);
         let end_byte = util::to_byte_index(&end, &self.line_starts, false);
         start_byte..=end_byte
     }
 
+    #[cfg(feature = "full-context")]
     pub(crate) fn line_range(
         &self,
         line: usize,
