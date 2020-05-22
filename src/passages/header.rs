@@ -187,7 +187,7 @@ impl PassageHeader {
 
                 // For any warning locations returned, add them to the warning list
                 for idx in indices {
-                    let warning = Warning::new(w.clone(), context.subcontext(Position::rel(1, idx + 1)..=Position::rel(1, idx+2)));
+                    let warning = Warning::new(w.clone(), Some(context.subcontext(Position::rel(1, idx + 1)..=Position::rel(1, idx+2))));
                     warnings.push(warning);
                 }
             }
@@ -312,7 +312,7 @@ fn check_name(context: FullContext, unescaped_str: &str, error: ErrorKind) -> Re
         Ok(escaped)
     } else {
         let err_range = Position::rel(1, unescaped[0] + 1)..=Position::rel(1, unescaped[0]+1);
-        let error = Error::new(error, context.subcontext(err_range));
+        let error = Error::new(error, Some(context.subcontext(err_range)));
         Err(error)
     }
 }
@@ -406,7 +406,7 @@ mod tests {
             let errors = res.err().unwrap().errors;
             assert!(errors.iter().any(|a| {
                 let sub = sub.subcontext(Position::rel(1, 4)..=Position::rel(1, 4));
-                let expected = Error::new(e.clone(), sub);
+                let expected = Error::new(e.clone(), Some(sub));
                 *a == expected
             }));
 
@@ -421,7 +421,7 @@ mod tests {
             assert_eq!(res.is_err(), true);
             assert!(res.err().unwrap().errors.iter().any(|a| {
                 let sub = sub.subcontext(Position::rel(1,4)..=Position::rel(1,4));
-                let expected = Error::new(e.clone(), sub);
+                let expected = Error::new(e.clone(), Some(sub));
                 *a == expected
             }));
             let input = format!(
@@ -435,7 +435,7 @@ mod tests {
             assert_eq!(res.is_err(), true);            
             assert!(res.err().unwrap().errors.iter().any(|a| {
                 let sub = sub.subcontext(Position::rel(1,6)..=Position::rel(1,6));
-                let expected = Error::new(e.clone(), sub);
+                let expected = Error::new(e.clone(), Some(sub));
                 *a == expected
             }));
         }
