@@ -116,7 +116,7 @@ impl Warning {
     ///
     /// Enabled with "warning-names" feature
     pub fn get_name(&self) -> &str {
-        self.warning_type.get_name()
+        self.kind.get_name()
     }
 }
 
@@ -128,7 +128,7 @@ impl std::fmt::Display for Warning {
         } else {
             String::new()
         };
-        write!(f, "{} at {:?}{}", self.warning_type, self.context, cause)
+        write!(f, "{} at {:?}{}", self.kind, self.context, cause)
     }
 }
 
