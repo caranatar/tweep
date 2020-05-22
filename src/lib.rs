@@ -141,7 +141,7 @@ pub use issues::Error;
 pub use issues::ErrorList;
 pub use issues::ErrorKind;
 pub use issues::Warning;
-pub use issues::WarningType;
+pub use issues::WarningKind;
 
 mod output;
 pub use output::Output;

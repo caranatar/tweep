@@ -12,7 +12,7 @@ use crate::PassageContent;
 use crate::Position;
 use crate::PositionKind;
 use crate::Warning;
-use crate::WarningType;
+use crate::WarningKind;
 #[cfg(feature = "full-context")]
 use bimap::BiMap;
 use std::collections::HashMap;
@@ -271,8 +271,8 @@ impl StoryPassages {
             (None, Some(_)) => self.title = other.title,
             (Some(self_title), Some(other_title)) => {
                 let mut warning = Warning::new(
-                    WarningType::DuplicateStoryTitle,
-                    other_title.context.clone(),
+                    WarningKind::DuplicateStoryTitle,
+                    Some(other_title.context.clone()),
                 );
                 warning.set_referent(self_title.context.clone());
                 warnings.push(warning)
@@ -283,8 +283,10 @@ impl StoryPassages {
         match (&self.data, &other.data) {
             (None, Some(_)) => self.data = other.data,
             (Some(self_data), Some(other_data)) => {
-                let mut warning =
-                    Warning::new(WarningType::DuplicateStoryData, other_data.context.clone());
+                let mut warning = Warning::new(
+                    WarningKind::DuplicateStoryData,
+                    Some(other_data.context.clone()),
+                );
                 warning.set_referent(self_data.context.clone());
                 warnings.push(warning);
             }
@@ -317,7 +319,10 @@ impl StoryPassages {
     pub fn check(&self) -> Vec<Warning> {
         let mut warnings = Vec::new();
         if self.title.is_none() {
-            warnings.push(Warning::new(WarningType::MissingStoryTitle, None));
+            warnings.push(Warning::new::<Context>(
+                WarningKind::MissingStoryTitle,
+                None,
+            ));
         }
 
         let mut missing_start = !self.passages.contains_key("Start");
@@ -326,7 +331,7 @@ impl StoryPassages {
             .as_ref()
             .or_else(|| {
                 // There is no StoryData, generate a warning
-                warnings.push(Warning::new(WarningType::MissingStoryData, None));
+                warnings.push(Warning::new::<Context>(WarningKind::MissingStoryData, None));
 
                 // Return None to prevent additional processing
                 None
@@ -348,11 +353,10 @@ impl StoryPassages {
                             if !self.passages.contains_key(start) {
                                 // There is an alternate start passage specified,
                                 // but it does not exist
-                                warnings.push(Warning {
-                                    warning_type: WarningType::DeadStartPassage(start.clone()),
-                                    referent: None,
-                                    context: Some(passage.context.clone()),
-                                });
+                                warnings.push(Warning::new(
+                                    WarningKind::DeadStartPassage(start.clone()),
+                                    Some(passage.context.clone()),
+                                ));
                             }
 
                             // Return something
@@ -364,7 +368,10 @@ impl StoryPassages {
             });
 
         if missing_start {
-            warnings.push(Warning::new(WarningType::MissingStartPassage, None));
+            warnings.push(Warning::new::<Context>(
+                WarningKind::MissingStartPassage,
+                None,
+            ));
         }
 
         for passage in self.passages.values() {
@@ -373,11 +380,10 @@ impl StoryPassages {
                     // Trim the target so that a whitespace warning and a dead
                     // link warning aren't both generated
                     if !self.passages.contains_key(link.target.trim()) {
-                        warnings.push(Warning {
-                            warning_type: WarningType::DeadLink(link.target.clone()),
-                            referent: None,
-                            context: Some(link.context.clone()),
-                        });
+                        warnings.push(Warning::new(
+                            WarningKind::DeadLink(link.target.clone()),
+                            Some(link.context.clone()),
+                        ));
                     }
                 }
             }
@@ -469,11 +475,11 @@ impl StoryPassages {
                 }
                 PassageContent::StoryTitle(_) => {
                     if let Some(existing) = &title {
-                        let warning = Warning {
-                            warning_type: WarningType::DuplicateStoryTitle,
-                            referent: Some(existing.context.clone()),
-                            context: Some(passage.context.clone()),
-                        };
+                        let mut warning = Warning::new(
+                            WarningKind::DuplicateStoryTitle,
+                            Some(passage.context.clone()),
+                        );
+                        warning.set_referent(existing.context.clone());
                         warnings.push(warning);
                     } else {
                         title = Some(passage);
@@ -481,11 +487,11 @@ impl StoryPassages {
                 }
                 PassageContent::StoryData(_) => {
                     if let Some(existing) = &data {
-                        let warning = Warning {
-                            warning_type: WarningType::DuplicateStoryData,
-                            referent: Some(existing.context.clone()),
-                            context: Some(passage.context.clone()),
-                        };
+                        let mut warning = Warning::new(
+                            WarningKind::DuplicateStoryData,
+                            Some(passage.context.clone()),
+                        );
+                        warning.set_referent(existing.context.clone());
                         warnings.push(warning);
                     } else {
                         data = Some(passage);
@@ -528,7 +534,7 @@ impl StoryPassages {
 mod tests {
     use super::*;
     use crate::Warning;
-    use crate::WarningType;
+    use crate::WarningKind;
     use tempfile::tempdir;
 
     #[test]
@@ -558,8 +564,8 @@ Test Story
         assert_eq!(res.is_ok(), true);
         assert_eq!(warnings[0], {
             let warning = Warning::new(
-                WarningType::EscapedOpenSquare,
-                context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
+                WarningKind::EscapedOpenSquare,
+                Some(context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6))),
             );
             warning
         });
@@ -603,14 +609,14 @@ Test Story
             assert_eq!(title.title, "Test Story");
             assert_eq!(warnings[0], {
                 let warning = Warning::new(
-                    WarningType::EscapedOpenSquare,
-                    context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
+                    WarningKind::EscapedOpenSquare,
+                    Some(context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6))),
                 );
                 warning
             });
             assert_eq!(
                 warnings[1],
-                Warning::new(WarningType::MissingStoryData, None)
+                Warning::new::<Context>(WarningKind::MissingStoryData, None)
             );
         } else {
             panic!("Expected StoryTitle");
@@ -674,8 +680,8 @@ blah blah
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedOpenCurly,
-                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
+                WarningKind::EscapedOpenCurly,
+                Some(context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7))),
             );
             warning
         }));
@@ -683,8 +689,8 @@ blah blah
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedCloseSquare,
-                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
+                WarningKind::EscapedCloseSquare,
+                Some(context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17))),
             );
             warning
         }));
@@ -748,8 +754,8 @@ blah blah
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedOpenCurly,
-                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
+                WarningKind::EscapedOpenCurly,
+                Some(context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7))),
             );
             warning
         }));
@@ -757,8 +763,8 @@ blah blah
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedCloseSquare,
-                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
+                WarningKind::EscapedCloseSquare,
+                Some(context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17))),
             );
             warning
         }));
@@ -815,10 +821,10 @@ A Test Story
         // the type of warnings we expect
         assert!(warnings
             .iter()
-            .any(|w| WarningType::DuplicateStoryData == w.warning_type));
+            .any(|w| WarningKind::DuplicateStoryData == w.kind));
         assert!(warnings
             .iter()
-            .any(|w| WarningType::DuplicateStoryTitle == w.warning_type));
+            .any(|w| WarningKind::DuplicateStoryTitle == w.kind));
 
         assert_eq!(res.is_ok(), true);
 
@@ -857,8 +863,8 @@ Link to [[A passage]]
         assert_eq!(
             warnings[0],
             Warning::new(
-                WarningType::DuplicateStoryData,
-                context.subcontext(Position::rel(15, 1)..)
+                WarningKind::DuplicateStoryData,
+                Some(context.subcontext(Position::rel(15, 1)..))
             )
             .with_referent(story.data.as_ref().unwrap().context.clone())
         );
@@ -908,8 +914,8 @@ Discarded Duplicate Title
         assert_eq!(
             warnings[0],
             Warning::new(
-                WarningType::DuplicateStoryTitle,
-                context.subcontext(Position::rel(15, 1)..)
+                WarningKind::DuplicateStoryTitle,
+                Some(context.subcontext(Position::rel(15, 1)..))
             )
             .with_referent(story.title.as_ref().unwrap().context.clone())
         );
@@ -982,8 +988,8 @@ Test Story
         warnings.append(&mut check_warnings);
         #[allow(unused_mut)]
         let expected = vec![Warning::new(
-            WarningType::DeadLink("Dead link".to_string()),
-            context.subcontext(Position::rel(5, 23)..=Position::rel(5, 35)),
+            WarningKind::DeadLink("Dead link".to_string()),
+            Some(context.subcontext(Position::rel(5, 23)..=Position::rel(5, 35))),
         )];
         assert_eq!(warnings, expected);
     }
@@ -1072,8 +1078,8 @@ Test Story
         assert_eq!(
             warnings,
             vec![Warning::new(
-                WarningType::DeadStartPassage("Alternate Start".to_string()),
-                context.subcontext(Position::rel(10, 1)..)
+                WarningKind::DeadStartPassage("Alternate Start".to_string()),
+                Some(context.subcontext(Position::rel(10, 1)..))
             )]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));
@@ -1095,7 +1101,7 @@ blah blah
         warnings.append(&mut check_warnings);
         assert_eq!(
             warnings,
-            vec![Warning::new(WarningType::MissingStoryTitle, None)]
+            vec![Warning::new::<Context>(WarningKind::MissingStoryTitle, None)]
         );
         assert_eq!(story.get_start_passage_name(), Some("Start"));
     }
@@ -1125,7 +1131,7 @@ Test Story
         warnings.append(&mut check_warnings);
         assert_eq!(
             warnings,
-            vec![Warning::new(WarningType::MissingStartPassage, None)]
+            vec![Warning::new::<Context>(WarningKind::MissingStartPassage, None)]
         );
         assert_eq!(story.get_start_passage_name(), None);
     }

@@ -1,5 +1,5 @@
-use crate::WarningType;
 use crate::Context;
+use crate::WarningKind;
 
 /// A warning with a [`WarningKind`], [`Position`], and optionally a reference
 /// to another [`Position`]
@@ -19,7 +19,7 @@ use crate::Context;
 #[derive(Debug, Eq, PartialEq)]
 pub struct Warning {
     /// The warning type
-    pub warning_type: WarningType,
+    pub kind: WarningKind,
 
     /// The context of this Warning
     pub context: Option<Context>,
@@ -38,10 +38,10 @@ impl Warning {
     /// let warning = Warning::new(WarningKind::MissingStartPassage, Some(context));
     /// # assert!(!warning.has_referent());
     /// ```
-    pub fn new<T: Into<Option<FullContext>>>(warning_type: WarningType, context: T) -> Self {
+    pub fn new<T: Into<Context>>(kind: WarningKind, context: Option<T>) -> Self {
         Warning {
-            warning_type,
-            context: context.into(),
+            kind,
+            context: context.map(|c| c.into()),
             referent: None,
         }
     }
@@ -138,8 +138,8 @@ mod tests {
 
     #[test]
     fn incremental() {
-        let context = FullContext::from(None, "[[".to_string());
-        let mut warning = Warning::new(WarningType::UnclosedLink, context);
+        let context: Context = FullContext::from(None, "[[".to_string()).into();
+        let mut warning = Warning::new(WarningKind::UnclosedLink, Some(context));
         assert!(!warning.has_referent());
         assert!(warning.get_referent().is_none());
 
@@ -153,7 +153,7 @@ mod tests {
     fn unchanged_referent() {
         let context = FullContext::from(None, "[[".to_string());
         let ref_context = FullContext::from(None, "foo bar".to_string());
-        let warning = Warning::new(WarningType::UnclosedLink, context)
+        let warning = Warning::new(WarningKind::UnclosedLink, Some(context))
             .with_referent(ref_context.clone());
         // Prove changing the Warning's Position doesn't change the referent
         assert_eq!(warning.get_referent(), Some(&ref_context));
@@ -163,7 +163,7 @@ mod tests {
     #[cfg(feature = "warning-names")]
     fn test_name() {
         let context = FullContext::from(None, "[[".to_string());
-        let warning = Warning::new(WarningType::UnclosedLink, context);
+        let warning = Warning::new(WarningKind::UnclosedLink, Some(context));
         assert_eq!(warning.get_name(), "UnclosedLink");
     }
 }

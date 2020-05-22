@@ -4,7 +4,7 @@ use crate::Output;
 use crate::Position;
 use crate::TwineLink;
 use crate::Warning;
-use crate::WarningType;
+use crate::WarningKind;
 
 /// The contents of a Twine passage.
 ///
@@ -77,11 +77,11 @@ impl TwineContent {
                     None => {
                         warnings.push({
                             Warning::new(
-                                WarningType::UnclosedLink,
-                                context.subcontext(
+                                WarningKind::UnclosedLink,
+                                Some(context.subcontext(
                                     Position::rel(row + 1, start + 1)
                                         ..=Position::rel(row + 1, line.len()),
-                                ),
+                                )),
                             )
                         });
                         break;
@@ -113,7 +113,7 @@ impl TwineContent {
                     || linked_passage.ends_with(char::is_whitespace)
                 {
                     warnings.push({
-                        Warning::new(WarningType::WhitespaceInLink, link_context.clone())
+                        Warning::new(WarningKind::WhitespaceInLink, Some(link_context.clone()))
                     });
                 }
 
@@ -182,8 +182,8 @@ mod tests {
         let out = TwineContent::parse(context.clone());
         let (res, warnings) = out.take();
         let expected = Warning::new(
-            WarningType::UnclosedLink,
-            context.subcontext(Position::rel(1, 6)..=Position::rel(1, 15)),
+            WarningKind::UnclosedLink,
+            Some(context.subcontext(Position::rel(1, 6)..=Position::rel(1, 15))),
         );
         assert_eq!(warnings, vec![expected]);
         assert_eq!(res.is_ok(), true);
@@ -209,10 +209,10 @@ mod tests {
         let expected_warnings: Vec<Warning> = (1 as usize..9)
             .map(|row| {
                 Warning::new(
-                    WarningType::WhitespaceInLink,
-                    context.subcontext(
+                    WarningKind::WhitespaceInLink,
+                    Some(context.subcontext(
                         Position::rel(row, 1)..=Position::rel(row, expected_lens[row - 1]),
-                    ),
+                    )),
                 )
             })
             .collect();

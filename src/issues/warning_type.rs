@@ -1,6 +1,6 @@
 /// An enum of the types of warnings that can be produced by `tweep`
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WarningType {
+pub enum WarningKind {
     /// `\[` in a passage title
     EscapedOpenSquare,
 
@@ -46,59 +46,59 @@ pub enum WarningType {
 }
 
 #[cfg(feature = "warning-names")]
-impl WarningType {
+impl WarningKind {
     /// Gets a string representation of a `WarningKind` variant's name
     ///
     /// Enabled with "warning-names" feature
     pub fn get_name(&self) -> &str {
         match self {
-            WarningType::EscapedOpenSquare => "EscapedOpenSquare",
-            WarningType::EscapedCloseSquare => "EscapedCloseSquare",
-            WarningType::EscapedOpenCurly => "EscapedOpenCurly",
-            WarningType::EscapedCloseCurly => "EscapedCloseCurly",
-            WarningType::JsonError(_) => "JsonError",
-            WarningType::DuplicateStoryData => "DuplicateStoryData",
-            WarningType::DuplicateStoryTitle => "DuplicateStoryTitle",
-            WarningType::MissingStoryData => "MissingStoryData",
-            WarningType::MissingStoryTitle => "MissingStoryTitle",
-            WarningType::UnclosedLink => "UnclosedLink",
-            WarningType::WhitespaceInLink => "WhitespaceInLink",
-            WarningType::DeadLink(_) => "DeadLink",
-            WarningType::MissingStartPassage => "MissingStartPassage",
-            WarningType::DeadStartPassage(_) => "DeadStartPassage",
+            WarningKind::EscapedOpenSquare => "EscapedOpenSquare",
+            WarningKind::EscapedCloseSquare => "EscapedCloseSquare",
+            WarningKind::EscapedOpenCurly => "EscapedOpenCurly",
+            WarningKind::EscapedCloseCurly => "EscapedCloseCurly",
+            WarningKind::JsonError(_) => "JsonError",
+            WarningKind::DuplicateStoryData => "DuplicateStoryData",
+            WarningKind::DuplicateStoryTitle => "DuplicateStoryTitle",
+            WarningKind::MissingStoryData => "MissingStoryData",
+            WarningKind::MissingStoryTitle => "MissingStoryTitle",
+            WarningKind::UnclosedLink => "UnclosedLink",
+            WarningKind::WhitespaceInLink => "WhitespaceInLink",
+            WarningKind::DeadLink(_) => "DeadLink",
+            WarningKind::MissingStartPassage => "MissingStartPassage",
+            WarningKind::DeadStartPassage(_) => "DeadStartPassage",
         }
     }
 }
 
-impl std::fmt::Display for WarningType {
+impl std::fmt::Display for WarningKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                WarningType::EscapedOpenSquare =>
+                WarningKind::EscapedOpenSquare =>
                     "Escaped [ character in passage header".to_string(),
-                WarningType::EscapedCloseSquare =>
+                WarningKind::EscapedCloseSquare =>
                     "Escaped ] character in passage header".to_string(),
-                WarningType::EscapedOpenCurly =>
+                WarningKind::EscapedOpenCurly =>
                     "Escaped { character in passage header".to_string(),
-                WarningType::EscapedCloseCurly =>
+                WarningKind::EscapedCloseCurly =>
                     "Escaped } character in passage header".to_string(),
-                WarningType::JsonError(error_str) =>
+                WarningKind::JsonError(error_str) =>
                     format!("Error encountered while parsing JSON: {}", error_str),
-                WarningType::DuplicateStoryData => "Multiple StoryData passages found".to_string(),
-                WarningType::DuplicateStoryTitle =>
+                WarningKind::DuplicateStoryData => "Multiple StoryData passages found".to_string(),
+                WarningKind::DuplicateStoryTitle =>
                     "Multiple StoryTitle passages found".to_string(),
-                WarningType::MissingStoryData => "No StoryData passage found".to_string(),
-                WarningType::MissingStoryTitle => "No StoryTitle passage found".to_string(),
-                WarningType::UnclosedLink => "Unclosed passage link".to_string(),
-                WarningType::WhitespaceInLink => "Whitespace in passage link".to_string(),
-                WarningType::DeadLink(target) =>
+                WarningKind::MissingStoryData => "No StoryData passage found".to_string(),
+                WarningKind::MissingStoryTitle => "No StoryTitle passage found".to_string(),
+                WarningKind::UnclosedLink => "Unclosed passage link".to_string(),
+                WarningKind::WhitespaceInLink => "Whitespace in passage link".to_string(),
+                WarningKind::DeadLink(target) =>
                     format!("Dead link to nonexistant passage: {}", target),
-                WarningType::MissingStartPassage =>
+                WarningKind::MissingStartPassage =>
                     "No passage \"Start\" found and no alternate starting passage set in StoryData"
                         .to_string(),
-                WarningType::DeadStartPassage(start) =>
+                WarningKind::DeadStartPassage(start) =>
                     format!("Start passage set to {}, but no such passage found", start),
             }
         )
@@ -112,19 +112,19 @@ mod tests {
     #[cfg(feature = "warning-names")]
     #[test]
     fn test_names() {
-        assert_eq!(WarningType::EscapedOpenSquare.get_name(), "EscapedOpenSquare");
-        assert_eq!(WarningType::EscapedCloseSquare.get_name(), "EscapedCloseSquare");
-        assert_eq!(WarningType::EscapedOpenCurly.get_name(), "EscapedOpenCurly");
-        assert_eq!(WarningType::EscapedCloseCurly.get_name(), "EscapedCloseCurly");
-        assert_eq!(WarningType::JsonError("x".to_string()).get_name(), "JsonError");
-        assert_eq!(WarningType::DuplicateStoryData.get_name(), "DuplicateStoryData");
-        assert_eq!(WarningType::DuplicateStoryTitle.get_name(), "DuplicateStoryTitle");
-        assert_eq!(WarningType::MissingStoryData.get_name(), "MissingStoryData");
-        assert_eq!(WarningType::MissingStoryTitle.get_name(), "MissingStoryTitle");
-        assert_eq!(WarningType::UnclosedLink.get_name(), "UnclosedLink");
-        assert_eq!(WarningType::WhitespaceInLink.get_name(), "WhitespaceInLink");
-        assert_eq!(WarningType::DeadLink("x".to_string()).get_name(), "DeadLink");
-        assert_eq!(WarningType::MissingStartPassage.get_name(), "MissingStartPassage");
-        assert_eq!(WarningType::DeadStartPassage("x".to_string()).get_name(), "DeadStartPassage");
+        assert_eq!(WarningKind::EscapedOpenSquare.get_name(), "EscapedOpenSquare");
+        assert_eq!(WarningKind::EscapedCloseSquare.get_name(), "EscapedCloseSquare");
+        assert_eq!(WarningKind::EscapedOpenCurly.get_name(), "EscapedOpenCurly");
+        assert_eq!(WarningKind::EscapedCloseCurly.get_name(), "EscapedCloseCurly");
+        assert_eq!(WarningKind::JsonError("x".to_string()).get_name(), "JsonError");
+        assert_eq!(WarningKind::DuplicateStoryData.get_name(), "DuplicateStoryData");
+        assert_eq!(WarningKind::DuplicateStoryTitle.get_name(), "DuplicateStoryTitle");
+        assert_eq!(WarningKind::MissingStoryData.get_name(), "MissingStoryData");
+        assert_eq!(WarningKind::MissingStoryTitle.get_name(), "MissingStoryTitle");
+        assert_eq!(WarningKind::UnclosedLink.get_name(), "UnclosedLink");
+        assert_eq!(WarningKind::WhitespaceInLink.get_name(), "WhitespaceInLink");
+        assert_eq!(WarningKind::DeadLink("x".to_string()).get_name(), "DeadLink");
+        assert_eq!(WarningKind::MissingStartPassage.get_name(), "MissingStartPassage");
+        assert_eq!(WarningKind::DeadStartPassage("x".to_string()).get_name(), "DeadStartPassage");
     }
 }

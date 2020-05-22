@@ -3,7 +3,7 @@ use crate::FullContext;
 use crate::Output;
 use crate::Position;
 use crate::Warning;
-use crate::WarningType;
+use crate::WarningKind;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};

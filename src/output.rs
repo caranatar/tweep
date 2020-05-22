@@ -245,13 +245,13 @@ mod tests {
 
     #[test]
     fn basic_with_warnings() {
-        use crate::WarningType;
+        use crate::WarningKind;
         use crate::FullContext;
         let context = FullContext::from(None, "".to_string());
-        let warnings = vec![ Warning::new(WarningType::DuplicateStoryData, context.clone()),
-                             Warning::new(WarningType::DuplicateStoryTitle, context.clone()) ];
-        let expected = vec![ Warning::new(WarningType::DuplicateStoryData, context.clone()),
-                             Warning::new(WarningType::DuplicateStoryTitle, context.clone()) ];
+        let warnings = vec![ Warning::new(WarningKind::DuplicateStoryData, Some(context.clone())),
+                             Warning::new(WarningKind::DuplicateStoryTitle, Some(context.clone())) ];
+        let expected = vec![ Warning::new(WarningKind::DuplicateStoryData, Some(context.clone())),
+                             Warning::new(WarningKind::DuplicateStoryTitle, Some(context.clone())) ];
         let out:Output<u8> = Output::new(5).with_warnings(warnings);
         assert!(out.has_warnings());
         assert_eq!(out.get_output(), &5);

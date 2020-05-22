@@ -11,4 +11,4 @@ mod warning;
 pub use warning::Warning;
 
 mod warning_type;
-pub use warning_type::WarningType;
+pub use warning_type::WarningKind;

@@ -239,7 +239,7 @@ mod tests {
     use super::*;
     use crate::Context;
     use crate::Warning;
-    use crate::WarningType;
+    use crate::WarningKind;
     use tempfile::tempdir;
 
     #[test]
@@ -271,8 +271,8 @@ Test Story
         let context = FullContext::from(None, input);
         assert_eq!(warnings[0], {
             let warning = Warning::new(
-                WarningType::EscapedOpenSquare,
-                context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6)),
+                WarningKind::EscapedOpenSquare,
+                Some(context.subcontext(Position::rel(7, 5)..=Position::rel(7, 6))),
             );
             warning
         });
@@ -315,7 +315,7 @@ Test Story
         assert_eq!(title, "Test Story");
         assert_eq!(
             warnings[0],
-            Warning::new(WarningType::MissingStoryData, None)
+            Warning::new::<Context>(WarningKind::MissingStoryData, None)
         );
 
         Ok(())
@@ -405,8 +405,8 @@ blah blah
         let context = FullContext::from(Some("test.twee".to_string()), input_one);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedOpenCurly,
-                context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7)),
+                WarningKind::EscapedOpenCurly,
+                Some(context.subcontext(Position::rel(10, 6)..=Position::rel(10, 7))),
             );
             warning
         }));
@@ -414,8 +414,8 @@ blah blah
         let context = FullContext::from(Some("test2.tw".to_string()), input_two);
         assert!(warnings.contains(&{
             let warning = Warning::new(
-                WarningType::EscapedCloseSquare,
-                context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17)),
+                WarningKind::EscapedCloseSquare,
+                Some(context.subcontext(Position::rel(9, 16)..=Position::rel(9, 17))),
             );
             warning
         }));
