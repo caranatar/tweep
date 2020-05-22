@@ -22,9 +22,9 @@ use std::io::Read;
 use std::path::Path;
 
 #[cfg(not(feature = "full-context"))]
-type StoryPassagesParseOutput = Output<Result<StoryPassages, ErrorList>>;
+type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
 #[cfg(feature = "full-context")]
-type StoryPassagesParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
+type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 /// A parsed Twee story, that stores the full [`Passage`] object of each field
 ///
@@ -53,11 +53,6 @@ pub struct StoryPassages {
     #[cfg(feature = "full-context")]
     pub code_map: CodeMap,
 }
-
-#[cfg(not(feature = "full-context"))]
-type ParseOutput = Output<Result<StoryPassages, ErrorList>>;
-#[cfg(feature = "full-context")]
-type ParseOutput = Output<Result<StoryPassages, ContextErrorList>>;
 
 impl StoryPassages {
     /// Renumber pids, starting at the given number and counting up
@@ -413,7 +408,7 @@ impl StoryPassages {
             })
     }
 
-    pub(crate) fn parse(context: FullContext) -> StoryPassagesParseOutput {
+    pub(crate) fn parse(context: FullContext) -> ParseOutput {
         let contents = context.get_contents();
 
         #[cfg(feature = "full-context")]
