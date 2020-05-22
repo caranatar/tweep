@@ -6,6 +6,7 @@ use crate::context::{Position, FullContext};
 /// discarding additional, unwanted information.
 ///
 /// [`FullContext`]: struct.FullContext.html
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PartialContext {
     file_name: Option<String>,
     start_position: Position,
