@@ -95,9 +95,9 @@ impl PassageHeader {
             // Generate appropriate error
             errors.push(
                 if trimmed.starts_with("::") {
-                    Error::new(ErrorType::LeadingWhitespace, context.clone())
+                    Error::new(ErrorKind::LeadingWhitespace, Some(context.clone()))
                 } else {
-                    Error::new(ErrorType::MissingSigil, context.clone())
+                    Error::new(ErrorKind::MissingSigil, Some(context.clone()))
                 }
             );
         }
@@ -118,7 +118,7 @@ impl PassageHeader {
             name_end_pos = pos;
 
             if find_last_unescaped(&input[range.end..], "[").is_some() {
-                let error = Error::new(ErrorType::MetadataBeforeTags, context.subcontext(Position::rel(1, pos+1)..));
+                let error = Error::new(ErrorKind::MetadataBeforeTags, Some(context.subcontext(Position::rel(1, pos+1)..)));
                 errors.push(error);
             }
 
@@ -145,7 +145,7 @@ impl PassageHeader {
                     .map(|s| s.to_string())
                     .collect();
             } else {
-                let error = Error::new(ErrorType::UnclosedTagBlock, context.subcontext(Position::rel(1, pos+1)..));
+                let error = Error::new(ErrorKind::UnclosedTagBlock, Some(context.subcontext(Position::rel(1, pos+1)..)));
                 errors.push(error);
             }
 
@@ -157,23 +157,23 @@ impl PassageHeader {
         for (c, e, w) in vec![
             (
                 "{",
-                ErrorType::UnescapedOpenCurly,
                 WarningType::EscapedOpenCurly,
+                ErrorKind::UnescapedOpenCurly,
             ),
             (
                 "}",
-                ErrorType::UnescapedCloseCurly,
                 WarningType::EscapedCloseCurly,
+                ErrorKind::UnescapedCloseCurly,
             ),
             (
                 "[",
-                ErrorType::UnescapedOpenSquare,
                 WarningType::EscapedOpenSquare,
+                ErrorKind::UnescapedOpenSquare,
             ),
             (
                 "]",
-                ErrorType::UnescapedCloseSquare,
                 WarningType::EscapedCloseSquare,
+                ErrorKind::UnescapedCloseSquare,
             ),
         ] {
             // If there are unescaped special chars, return the error now. Pass
@@ -199,7 +199,7 @@ impl PassageHeader {
             String::default()
         };
         if name.is_empty() {
-            let error = Error::new(ErrorType::EmptyName, context.subcontext(Position::rel(1,3)..));
+            let error = Error::new(ErrorKind::EmptyName, Some(context.subcontext(Position::rel(1,3)..)));
             errors.push(error);
         }
 
@@ -297,7 +297,7 @@ fn guess_metadata_range(input: &str) -> Option<Range<usize>> {
 /// the name contains any instances of that character but escaped, return a list
 /// of locations in the name where the escaped character is found so that
 /// warnings can be generated
-fn check_name(context: FullContext, unescaped_str: &str, error: ErrorType) -> Result<Vec<usize>, Error> {
+fn check_name(context: FullContext, unescaped_str: &str, error: ErrorKind) -> Result<Vec<usize>, Error> {
     let escaped_str = format!("\\{}", unescaped_str);
     let input = context.get_contents();
 
@@ -329,7 +329,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MissingSigil, expected);
+            let error = Error::new(ErrorKind::MissingSigil, Some(expected));
             error
         });
     }
@@ -342,7 +342,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::LeadingWhitespace, expected);
+            let error = Error::new(ErrorKind::LeadingWhitespace, Some(expected));
             error
         });
     }
@@ -355,7 +355,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName, expected);
+            let error = Error::new(ErrorKind::EmptyName, Some(expected));
             error
         });
 
@@ -365,7 +365,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::EmptyName, expected);
+            let error = Error::new(ErrorKind::EmptyName, Some(expected));
             error
         });
     }
@@ -381,7 +381,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::MetadataBeforeTags, expected);
+            let error = Error::new(ErrorKind::MetadataBeforeTags, Some(expected));
             error
         });
     }
@@ -389,10 +389,10 @@ mod tests {
     #[test]
     fn unescaped_chars() {
         for (c, e) in vec![
-            ("{", ErrorType::UnescapedOpenCurly),
-            ("}", ErrorType::UnescapedCloseCurly),
-            ("[", ErrorType::UnescapedOpenSquare),
-            ("]", ErrorType::UnescapedCloseSquare),
+            ("{", ErrorKind::UnescapedOpenCurly),
+            ("}", ErrorKind::UnescapedCloseCurly),
+            ("[", ErrorKind::UnescapedOpenSquare),
+            ("]", ErrorKind::UnescapedCloseSquare),
         ] {
             let context = FullContext::from(
                 None,
@@ -449,7 +449,7 @@ mod tests {
         let (res, _) = out.take();
         assert_eq!(res.is_err(), true);
         assert_eq!(res.err().unwrap().errors[0], {
-            let error = Error::new(ErrorType::UnclosedTagBlock, expected);
+            let error = Error::new(ErrorKind::UnclosedTagBlock, Some(expected));
             error
         });
     }

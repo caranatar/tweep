@@ -139,7 +139,7 @@ pub use context::PartialContext;
 mod issues;
 pub use issues::Error;
 pub use issues::ErrorList;
-pub use issues::ErrorType;
+pub use issues::ErrorKind;
 pub use issues::Warning;
 pub use issues::WarningType;
 

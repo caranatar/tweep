@@ -174,8 +174,8 @@ impl StoryPassages {
                 // Check for errors, return Error if we can't open file
                 let err_string = format!("{}", file.err().unwrap());
                 return Output::new(Err(Error::new(
-                    crate::ErrorType::BadInputPath(path_string, err_string),
-                    FullContext::from(None, file_name),
+                    crate::ErrorKind::BadInputPath(path_string, err_string),
+                    Some(FullContext::from(None, file_name)),
                 )
                 .into()));
             }
@@ -191,8 +191,8 @@ impl StoryPassages {
                 // Return an error if we can't read the file
                 let err_string = format!("{}", res.err().unwrap());
                 return Output::new(Err(Error::new(
-                    crate::ErrorType::BadInputPath(path_string, err_string),
-                    FullContext::from(None, file_name),
+                    crate::ErrorKind::BadInputPath(path_string, err_string),
+                    Some(FullContext::from(None, file_name)),
                 )
                 .into()));
             }
@@ -204,8 +204,8 @@ impl StoryPassages {
             let dir = std::fs::read_dir(path);
             if dir.is_err() {
                 let err_string = format!("{}", dir.err().unwrap());
-                return Output::new(Err(Error::new(
-                    crate::ErrorType::BadInputPath(path_string, err_string),
+                return Output::new(Err(Error::new::<Context>(
+                    crate::ErrorKind::BadInputPath(path_string, err_string),
                     None,
                 )
                 .into()));
@@ -239,8 +239,8 @@ impl StoryPassages {
             Output::new(Ok(story)).with_warnings(warnings)
         } else {
             let err_string = "Path is not a file or directory".to_string();
-            Output::new(Err(Error::new(
-                crate::ErrorType::BadInputPath(path_string, err_string),
+            Output::new(Err(Error::new::<Context>(
+                crate::ErrorKind::BadInputPath(path_string, err_string),
                 None,
             )
             .into()))

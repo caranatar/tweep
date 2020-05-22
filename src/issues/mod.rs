@@ -2,7 +2,7 @@ mod error;
 pub use error::Error;
 
 mod error_type;
-pub use error_type::ErrorType;
+pub use error_type::ErrorKind;
 
 mod error_list;
 pub use error_list::ErrorList;

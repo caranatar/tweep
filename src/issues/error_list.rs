@@ -145,7 +145,7 @@ impl  std::convert::From<Error> for ErrorList {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ErrorType;
+    use crate::ErrorKind;
     use crate::FullContext;
 
     #[test]
@@ -154,23 +154,23 @@ mod tests {
         assert!(errs.is_empty());
         let context = FullContext::from(None, "::".to_string());
         let expected = context.clone();
-        errs.push(Error::new(ErrorType::EmptyName, context));
+        errs.push(Error::new(ErrorKind::EmptyName, Some(context)));
         assert!(!errs.is_empty());
-        assert_eq!(errs.errors, vec![Error::new(ErrorType::EmptyName, expected)]);
+        assert_eq!(errs.errors, vec![Error::new(ErrorKind::EmptyName, Some(expected))]);
     }
 
     #[test]
     fn positional() {
         let mut errs = ErrorList::default();
         assert!(errs.is_empty());
-        errs.push(Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string())));
-        errs.push(Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string())));
+        errs.push(Error::new(ErrorKind::EmptyName, Some(FullContext::from(None, "::".to_string()))));
+        errs.push(Error::new(ErrorKind::MissingSigil, Some(FullContext::from(None, "Blah".to_string()))));
         assert!(!errs.is_empty());
         assert_eq!(
             errs.errors,
             vec![
-                Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string())),
-                Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))
+                Error::new(ErrorKind::EmptyName, Some(FullContext::from(None, "::".to_string()))),
+                Error::new(ErrorKind::MissingSigil, Some(FullContext::from(None, "Blah".to_string())))
             ]
         );
     }
@@ -182,12 +182,12 @@ mod tests {
 
         fn error_list_left() -> ErrorList {
             ErrorList {
-                errors: vec![Error::new(ErrorType::EmptyName, FullContext::from(None, "::".to_string()))],
+                errors: vec![Error::new(ErrorKind::EmptyName, Some(FullContext::from(None, "::".to_string())))],
             }
         };
         fn error_list_right() -> ErrorList {
             ErrorList {
-                errors: vec![Error::new(ErrorType::MissingSigil, FullContext::from(None, "Blah".to_string()))],
+                errors: vec![Error::new(ErrorKind::MissingSigil, Some(FullContext::from(None, "Blah".to_string())))],
             }
         };
 
