@@ -118,6 +118,7 @@ impl Passage {
         // Create the content's context
         let content_context = context
             .subcontext(Position::rel(2, 1)..=context.end_of_line(len + 1, PositionKind::Relative));
+        let trimmed_context = context.subcontext(..=content_context.get_end_position());
 
         // Parse the content based on the type indicated by the header
         let content: Output<Result<PassageContent, ErrorList>>;
@@ -134,7 +135,7 @@ impl Passage {
         };
 
         // Assemble and return the output
-        Self::new(header, content, context)
+        Self::new(header, content, trimmed_context)
     }
 }
 
