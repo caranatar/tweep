@@ -127,12 +127,21 @@ impl StoryPassages {
         for path in input {
             let out = StoryPassages::from_path_internal(path);
             let (res, mut sub_warnings) = out.take();
-            if res.is_err() {
-                return Output::new(res).with_warnings(warnings);
+            warnings.append(&mut sub_warnings);
+            #[allow(unused_mut)]
+            if let Err(mut e) = res {
+                #[cfg(feature = "full-context")]
+                {
+                    story.renumber_file_ids(e.code_map.contexts.len());
+                    e.code_map.contexts.extend(story.code_map.contexts);
+                    for (id, file_name) in story.code_map.id_file_map.iter() {
+                        e.code_map.id_file_map.insert(*id, file_name.clone());
+                    }
+                }
+                return Output::new(Err(e)).with_warnings(warnings);
             }
             let sub_story = res.ok().unwrap();
             let mut merge_warnings = story.merge_from(sub_story);
-            warnings.append(&mut sub_warnings);
             warnings.append(&mut merge_warnings);
         }
 
