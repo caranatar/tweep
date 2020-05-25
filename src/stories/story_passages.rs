@@ -868,7 +868,7 @@ Link to [[A passage]]
             warnings[0],
             Warning::new(
                 WarningKind::DuplicateStoryData,
-                Some(context.subcontext(Position::rel(15, 1)..))
+                Some(context.subcontext(Position::rel(15, 1)..=Position::abs(18, 1)))
             )
             .with_referent(story.data.as_ref().unwrap().context.clone())
         );
@@ -919,7 +919,7 @@ Discarded Duplicate Title
             warnings[0],
             Warning::new(
                 WarningKind::DuplicateStoryTitle,
-                Some(context.subcontext(Position::rel(15, 1)..))
+                Some(context.subcontext(Position::rel(15, 1)..=Position::abs(16, 25)))
             )
             .with_referent(story.title.as_ref().unwrap().context.clone())
         );
@@ -1083,7 +1083,7 @@ Test Story
             warnings,
             vec![Warning::new(
                 WarningKind::DeadStartPassage("Alternate Start".to_string()),
-                Some(context.subcontext(Position::rel(10, 1)..))
+                Some(context.subcontext(Position::rel(10, 1)..=Position::abs(14, 1)))
             )]
         );
         assert_eq!(story.get_start_passage_name(), Some("Alternate Start"));
