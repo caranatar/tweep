@@ -24,7 +24,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! tweep = "0.2"
+//! tweep = "0.3"
 //! ```
 //!
 //! For basic parsing, the main entry point into tweep is through the [`Story`]
