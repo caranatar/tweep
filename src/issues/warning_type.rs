@@ -45,11 +45,11 @@ pub enum WarningKind {
     DeadStartPassage(String),
 }
 
-#[cfg(feature = "warning-names")]
+#[cfg(feature = "issue-names")]
 impl WarningKind {
     /// Gets a string representation of a `WarningKind` variant's name
     ///
-    /// Enabled with "warning-names" feature
+    /// Enabled with "issue-names" feature
     pub fn get_name(&self) -> &str {
         match self {
             WarningKind::EscapedOpenSquare => "EscapedOpenSquare",
@@ -105,11 +105,11 @@ impl std::fmt::Display for WarningKind {
     }
 }
 
-#[cfg(all(test, feature = "warning-names"))]
+#[cfg(all(test, feature = "issue-names"))]
 mod tests {
     use super::*;
 
-    #[cfg(feature = "warning-names")]
+    #[cfg(feature = "issue-names")]
     #[test]
     fn test_names() {
         assert_eq!(WarningKind::EscapedOpenSquare.get_name(), "EscapedOpenSquare");

@@ -110,11 +110,11 @@ impl Warning {
     }
 }
 
-#[cfg(feature = "warning-names")]
+#[cfg(feature = "issue-names")]
 impl Warning {
     /// Gets a string representation of a `Warning`'s `WarningKind` variant name
     ///
-    /// Enabled with "warning-names" feature
+    /// Enabled with "issue-names" feature
     pub fn get_name(&self) -> &str {
         self.kind.get_name()
     }
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "warning-names")]
+    #[cfg(feature = "issue-names")]
     fn test_name() {
         let context = FullContext::from(None, "[[".to_string());
         let warning = Warning::new(WarningKind::UnclosedLink, Some(context));
