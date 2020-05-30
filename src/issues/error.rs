@@ -37,6 +37,16 @@ impl Error {
     }
 }
 
+#[cfg(feature = "issue-names")]
+impl Error {
+    /// Gets a string representation of a `Error`'s `ErrorKind` variant name
+    ///
+    /// Enabled with "issue-names" feature
+    pub fn get_name(&self) -> &str {
+        self.kind.get_name()
+    }
+}
+
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None

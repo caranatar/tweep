@@ -33,6 +33,27 @@ pub enum ErrorKind {
     BadInputPath(String, String),
 }
 
+#[cfg(feature = "issue-names")]
+impl ErrorKind {
+    /// Gets a string representation of a `ErrorKind` variant's name
+    ///
+    /// Enabled with "issue-names" feature
+    pub fn get_name(&self) -> &str {
+        match self {
+            ErrorKind::EmptyName => "EmptyName",
+            ErrorKind::LeadingWhitespace => "LeadingWhitespace",
+            ErrorKind::MetadataBeforeTags => "MetadataBeforeTags",
+            ErrorKind::MissingSigil => "MissingSigil",
+            ErrorKind::UnescapedOpenSquare => "UnescapedOpenSquare",
+            ErrorKind::UnescapedOpenCurly => "UnescapedOpenCurly",
+            ErrorKind::UnescapedCloseSquare => "UnescapedCloseSquare",
+            ErrorKind::UnescapedCloseCurly => "UnescapedCloseCurly",
+            ErrorKind::UnclosedTagBlock => "UnclosedTagBlock",
+            ErrorKind::BadInputPath(_, _) => "BadInputPath",
+        }
+    }
+}
+
 impl std::fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
