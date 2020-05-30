@@ -297,7 +297,14 @@ impl StoryPassages {
             _ => (),
         }
 
-        self.passages.extend(other.passages);
+        for (name, passage) in other.passages.drain() {
+            if self.passages.contains_key(&name) {
+                warnings.push(Warning::new(WarningKind::DuplicatePassage(name.clone()), Some(passage.context.clone())).with_referent(self.passages.get(&name).unwrap().context.clone()));
+            } else {
+                self.passages.insert(name, passage);
+            }
+        }
+
         self.scripts.append(&mut other.scripts);
         self.stylesheets.append(&mut other.stylesheets);
 
@@ -426,7 +433,7 @@ impl StoryPassages {
         // Story variables
         let mut title: Option<Passage> = None;
         let mut data: Option<Passage> = None;
-        let mut passages = HashMap::new();
+        let mut passages:HashMap<String, Passage> = HashMap::new();
         let mut scripts = Vec::new();
         let mut stylesheets = Vec::new();
 
@@ -475,7 +482,12 @@ impl StoryPassages {
             // Handle passage types appropriately
             match &passage.content {
                 PassageContent::Normal(_) => {
-                    passages.insert(passage.header.name.clone(), passage);
+                    let name = &passage.header.name;
+                    if passages.contains_key(name) {
+                        warnings.push(Warning::new(WarningKind::DuplicatePassage(name.clone()), Some(passage.context.clone())).with_referent(passages.get(name).unwrap().context.clone()));
+                    } else {
+                        passages.insert(name.clone(), passage);
+                    }
                 }
                 PassageContent::StoryTitle(_) => {
                     if let Some(existing) = &title {

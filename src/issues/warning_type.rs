@@ -43,6 +43,9 @@ pub enum WarningKind {
 
     /// Start passage set in `StoryData` that cannot be found
     DeadStartPassage(String),
+
+    /// Encountered a duplicated passage name
+    DuplicatePassage(String),
 }
 
 #[cfg(feature = "issue-names")]
@@ -66,6 +69,7 @@ impl WarningKind {
             WarningKind::DeadLink(_) => "DeadLink",
             WarningKind::MissingStartPassage => "MissingStartPassage",
             WarningKind::DeadStartPassage(_) => "DeadStartPassage",
+            WarningKind::DuplicatePassage(_) => "DuplicatePassage",
         }
     }
 }
@@ -100,6 +104,7 @@ impl std::fmt::Display for WarningKind {
                         .to_string(),
                 WarningKind::DeadStartPassage(start) =>
                     format!("Start passage set to {}, but no such passage found", start),
+                WarningKind::DuplicatePassage(name) => format!("Found duplicate passage named {}", name),
             }
         )
     }
@@ -126,5 +131,6 @@ mod tests {
         assert_eq!(WarningKind::DeadLink("x".to_string()).get_name(), "DeadLink");
         assert_eq!(WarningKind::MissingStartPassage.get_name(), "MissingStartPassage");
         assert_eq!(WarningKind::DeadStartPassage("x".to_string()).get_name(), "DeadStartPassage");
+        assert_eq!(WarningKind::DuplicatePassage("x".to_string()).get_name(), "DuplicatePassage");
     }
 }
