@@ -99,8 +99,8 @@ assert_eq!(metadata["position"], "400,600");
 
 [Twine 2]: https://twinery.org/
 [here]: https://github.com/iftechfoundation/twine-specs/blob/master/twee-3-specification.md
-[`Story`]: struct.Story.html
-[`StoryPassages`]: struct.StoryPassages.html
-[`Passage`]: struct.Passage.html
+[`Story`]: https://docs.rs/tweep/0.3.0/tweep/struct.Story.html
+[`StoryPassages`]: https://docs.rs/tweep/0.3.0/tweep/struct.StoryPassages.html
+[`Passage`]: https://docs.rs/tweep/0.3.0/tweep/struct.Passage.html
 
 License: MIT
