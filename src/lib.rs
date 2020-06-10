@@ -1,4 +1,4 @@
-//! Tweep is a parser for the Twee 3 interactive fiction format
+//! Tweep is a parser for the Twee v3 interactive fiction format
 //!
 //! # What is Twee?
 //! Twee is "a text format for marking up the source code of Twine stories." It
