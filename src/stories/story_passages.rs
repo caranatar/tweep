@@ -298,10 +298,16 @@ impl StoryPassages {
         }
 
         for (name, passage) in other.passages.drain() {
-            if self.passages.contains_key(&name) {
-                warnings.push(Warning::new(WarningKind::DuplicatePassage(name.clone()), Some(passage.context.clone())).with_referent(self.passages.get(&name).unwrap().context.clone()));
-            } else {
-                self.passages.insert(name, passage);
+            let entry = self.passages.entry(name.clone());
+            use std::collections::hash_map::Entry::*;
+            match entry {
+                Vacant(_) => {
+                    entry.or_insert(passage);
+                },
+                Occupied(v) => {
+                    let warning = Warning::new(WarningKind::DuplicatePassage(name), Some(passage.context.clone())).with_referent(v.get().context.clone());
+                    warnings.push(warning);
+                }
             }
         }
 
