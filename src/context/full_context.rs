@@ -1,7 +1,7 @@
 use crate::context::Position;
 use crate::context::PositionKind;
 use std::borrow::Borrow;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// A context that represents a span of twee code with a beginning, end, and
 /// contents, along with a file name and some helper functions
@@ -10,8 +10,8 @@ pub struct FullContext {
     file_name: Option<String>,
     start_position: Position,
     end_position: Position,
-    contents: Rc<String>,
-    line_starts: Rc<Vec<usize>>,
+    contents: Arc<String>,
+    line_starts: Arc<Vec<usize>>,
 }
 
 mod util {
@@ -46,8 +46,8 @@ impl FullContext {
         file_name: Option<String>,
         start_position: Position,
         end_position: Position,
-        contents: Rc<String>,
-        line_starts: Rc<Vec<usize>>,
+        contents: Arc<String>,
+        line_starts: Arc<Vec<usize>>,
     ) -> Self {
         FullContext {
             file_name,
@@ -116,8 +116,8 @@ impl FullContext {
             file_name,
             start,
             end,
-            Rc::new(contents),
-            Rc::new(line_starts),
+            Arc::new(contents),
+            Arc::new(line_starts),
         )
     }
 
